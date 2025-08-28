@@ -1,0 +1,58 @@
+---
+
+
+---
+
+<form id="carousel-form" enctype="multipart/form-data" method="POST">
+  <label>Título:
+    <input type="text" name="title" required />
+  </label>
+  <label>Descripción:
+    <textarea name="description" required></textarea>
+  </label>
+  <label>Imagen:
+    <input type="file" name="image" accept="image/*" required />
+  </label>
+  <button type="submit">Subir</button>
+</form>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("carousel-form");
+
+    if (!form) {
+      console.warn("Formulario de carrusel no encontrado");
+      return;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch("/api/carousel", {
+          method: "POST",
+          body: formData, // No establecer Content-Type manualmente
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          console.error("Error en la creación del carrusel:", errorData.error);
+          alert("Error: " + errorData.error);
+          return;
+        }
+
+        const result = await res.json();
+        console.log("Elemento del carrusel creado:", result);
+        alert("Elemento creado con éxito.");
+
+        form.reset(); // limpia los campos tras éxito
+      } catch (error) {
+        console.error("Error inesperado:", error);
+        alert("Error inesperado al enviar el formulario.");
+      }
+    });
+  });
+</script>
+

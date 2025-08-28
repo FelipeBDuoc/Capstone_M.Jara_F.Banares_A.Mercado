@@ -1,0 +1,73 @@
+---
+import { getCarouselItems } from '../pages/api/carousel.ts';
+const items = await getCarouselItems();
+---
+
+<div class="w-full max-w-6xl mx-auto p-6">
+  <div class="relative border border-[#64ffd6] shadow-xl shadow-[#00ffbb]/25 overflow-hidden rounded-lg">
+    <div id="carousel-track" class="flex transition-transform duration-300 ease-in-out w-full">
+      {items.map((item) => (
+        <div class="w-full flex-shrink-0 flex items-center gap-4 p-6" key={item.id}>
+          <img src={item.imageUrl} class="w-1/2 object-cover h-full rounded-md" />
+          <div class="w-1/2">
+            <h2 class="text-2xl text-[#00ffbb] font-bold mb-2">{item.title}</h2>
+            <p class="text-white">{item.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <!-- Botones -->
+    <button
+      id="prev-btn"
+      class="absolute left-4 top-1/2 -translate-y-1/2 bg-[#00ffbb] hover:bg-white text-white hover:text-black rounded-full p-2 shadow"
+      aria-label="Previous slide"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+    <button
+      id="next-btn"
+      class="absolute right-4 top-1/2 -translate-y-1/2 bg-[#00ffbb] hover:bg-white text-white hover:text-black rounded-full p-2 shadow"
+      aria-label="Next slide"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script is:inline>
+  window.addEventListener('DOMContentLoaded', () => {
+    const track = document.getElementById('carousel-track');
+    if (!track) return;
+
+    const slides = track.children;
+    const totalSlides = slides.length;
+    let currentIndex = 0;
+
+    const updateCarousel = () => {
+      const slideWidth = slides[0].offsetWidth;
+      track.style.transform = `translateX(-${slideWidth * currentIndex}px)`;
+    };
+
+    const goToNextSlide = () => {
+      currentIndex = (currentIndex + 1) % totalSlides;
+      updateCarousel();
+    };
+
+    document.getElementById('prev-btn')?.addEventListener('click', () => {
+      currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+      updateCarousel();
+    });
+
+    document.getElementById('next-btn')?.addEventListener('click', goToNextSlide);
+
+    // Cambiar slide automáticamente cada 5 segundos
+    const interval = setInterval(goToNextSlide, 5000);
+
+    updateCarousel();
+  });
+</script>

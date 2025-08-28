@@ -1,0 +1,19 @@
+añadir xterm.js
+añadir novnc (funciona más el xterm)
+añadir dashboard por maquina (xterm)
+
+añadir vinculacion con correo y discord
+añadir rangos(usuario, moderador y admin) para foro (admin es para la pagina)
+rol consumer (para la pagina)
+
+añadir sistema de shield (consola)
+añadir el sistema de notificaciones
+añadir publicaciones de info de la pagina
+arreglar carousel
+
+
+sistema de usuarios y maquinas de proxmox
+sistema de pago (api)
+
+
+usuario admin pueda visualizar todas las maquinas (probar permisos en proxmox en epoca temprana)
