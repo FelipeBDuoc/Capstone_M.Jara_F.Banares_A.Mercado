@@ -1,7 +1,11 @@
 ---
+
 import { getCarouselItems } from '../pages/api/carousel.ts';
 const items = await getCarouselItems();
+
 ---
+
+<!-- Carousel -->
 
 <div class="w-full max-w-6xl mx-auto p-6">
   <div class="relative border border-[#64ffd6] shadow-xl shadow-[#00ffbb]/25 overflow-hidden rounded-lg">
@@ -38,6 +42,8 @@ const items = await getCarouselItems();
     </button>
   </div>
 </div>
+
+<!-- Script carousel -->
 
 <script is:inline>
   window.addEventListener('DOMContentLoaded', () => {
