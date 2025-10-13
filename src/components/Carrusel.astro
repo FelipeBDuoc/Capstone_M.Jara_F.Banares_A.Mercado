@@ -62,11 +62,13 @@ const items = await getCarouselItems();
     const goToNextSlide = () => {
       currentIndex = (currentIndex + 1) % totalSlides;
       updateCarousel();
+      resetInterval();
     };
 
     document.getElementById('prev-btn')?.addEventListener('click', () => {
       currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
       updateCarousel();
+      resetInterval();
     });
 
     document.getElementById('next-btn')?.addEventListener('click', goToNextSlide);
