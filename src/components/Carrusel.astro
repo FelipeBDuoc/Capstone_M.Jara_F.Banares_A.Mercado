@@ -11,7 +11,7 @@ const items = await getCarouselItems();
   <div class="relative border border-[#64ffd6] shadow-xl shadow-[#00ffbb]/25 overflow-hidden rounded-lg">
     <div id="carousel-track" class="flex transition-transform duration-300 ease-in-out w-full">
       {items.map((item) => (
-        <div class="w-full flex-shrink-0 flex items-center gap-4 p-6" key={item.id}>
+        <div class="w-full flex-shrink-0 flex items-center gap-4 p-6">
           <img src={item.imageUrl} class="w-1/2 object-cover h-full rounded-md" />
           <div class="w-1/2">
             <h2 class="text-2xl text-[#00ffbb] font-bold mb-2">{item.title}</h2>
@@ -45,35 +45,4 @@ const items = await getCarouselItems();
 
 <!-- Script carousel -->
 
-<script is:inline>
-  window.addEventListener('DOMContentLoaded', () => {
-    const track = document.getElementById('carousel-track');
-    if (!track) return;
-
-    const slides = track.children;
-    const totalSlides = slides.length;
-    let currentIndex = 0;
-
-    const updateCarousel = () => {
-      const slideWidth = slides[0].offsetWidth;
-      track.style.transform = `translateX(-${slideWidth * currentIndex}px)`;
-    };
-
-    const goToNextSlide = () => {
-      currentIndex = (currentIndex + 1) % totalSlides;
-      updateCarousel();
-    };
-
-    document.getElementById('prev-btn')?.addEventListener('click', () => {
-      currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-      updateCarousel();
-    });
-
-    document.getElementById('next-btn')?.addEventListener('click', goToNextSlide);
-
-    // Cambiar slide automáticamente cada 5 segundos
-    const interval = setInterval(goToNextSlide, 5000);
-
-    updateCarousel();
-  });
-</script>
+<script src="../assets/scripts/slider.js"></script>
