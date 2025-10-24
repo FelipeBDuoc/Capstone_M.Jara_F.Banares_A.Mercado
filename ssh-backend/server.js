@@ -24,7 +24,7 @@ const virtualMachines = [
     id: 2, 
     name: "Servidor Windows", 
     status: "En línea", 
-    host: "192.168.1.89",  // Tu DNS de No-IP para Windows
+    host: "tunamayo.ddns.net",  // Tu DNS de No-IP para Windows
     port: 2222,                 // Puerto SSH default
     username: "Tuna Mayo", // Reemplaza con tu usuario real
     password: "Cachuga123" // Reemplaza con tu password real

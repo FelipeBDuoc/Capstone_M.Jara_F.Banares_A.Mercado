@@ -16,11 +16,73 @@ model Carousel {
 }
 
 model User {
-  id        Int     @id @default(autoincrement())
-  username  String  @unique
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
   password  String
-  role      String  @default("usuario")
-  connected Boolean @default(false)
-  email     String? @unique
-  discordId String? @unique
+  role      String     @default("usuario")
+
+  bio       String?
+  connected Boolean    @default(false)
+  email     String?    @unique
+  discordId String?    @unique
+  createdAt DateTime   @default(now())
+
+  posts     Post[]
+  comments  Comment[]
+  reactions Reaction[]
+}
+
+model Post {
+  id        Int         @id @default(autoincrement())
+  title     String
+  content   String      @db.Text
+  createdAt DateTime    @default(now())
+
+  authorId  Int
+  author  User        @relation(fields: [authorId], references: [id])
+
+  media     Media[]
+  comments  Comment[]
+  reactions Reaction[]
+}
+
+model Media {
+  id        Int      @id @default(autoincrement())
+  url       String
+  type      MediaType
+  createdAt DateTime @default(now())
+
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  type      String
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
 }

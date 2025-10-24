@@ -1,0 +1,231 @@
+---
+// src/components/Foro.astro
+
+// --- SIMULACIÓN DE DATOS DE LA BASE DE DATOS ---
+const users = [
+    { id: 1, username: "SirWilinston", bio: "Desarrollador y entusiasta de Astro." },
+    { id: 2, username: "AstroFan", bio: "Explorando el cosmos de la web." }
+];
+
+const posts = [
+    { id: 101, title: "¿Cuál es su característica favorita de Astro?", content: "Personalmente, me encantan las Astro Islands. La capacidad de enviar cero JavaScript por defecto es revolucionaria. ¿Qué opinan ustedes?", authorId: 1 },
+    { id: 102, title: "Proyecto con TailwindCSS y Astro", content: "Estoy empezando un nuevo proyecto y la combinación de Astro con Tailwind es increíblemente rápida para prototipar. ¿Alguien más lo usa?", authorId: 2 },
+    { id: 103, title: "Manejo de estado en Astro", content: "He estado investigando sobre cómo manejar el estado global. ¿Qué herramientas (Nanostores, SolidJS stores, etc.) recomiendan para un proyecto mediano?", authorId: 1 }
+];
+
+const comments = [
+    { id: 201, content: "Totalmente de acuerdo, ¡las islas son geniales!", authorId: 2, postId: 101 },
+    { id: 202, content: "¡Sí! Lo uso en todos mis proyectos. La purga de CSS automática es una maravilla.", authorId: 1, postId: 102 },
+    { id: 203, content: "He probado Nanostores y es súper ligero y fácil de integrar.", authorId: 2, postId: 103 },
+    { id: 204, content: "¡Buena pregunta! También estoy interesado en esto.", authorId: 2, postId: 101 }
+];
+
+const reactions = [
+    { id: 301, type: '👍', userId: 2, postId: 101 },
+    { id: 302, type: '🚀', userId: 1, postId: 101 },
+    { id: 303, type: '❤️', userId: 1, postId: 102 },
+    { id: 304, type: '👍', userId: 2, postId: 103 },
+    { id: 305, type: '🤔', userId: 1, postId: 103 }
+];
+
+// --- PROCESAMIENTO DE DATOS MEJORADO ---
+const currentUser = users.find(u => u.username === "SirWilinston");
+
+const enrichPosts = (postList) => {
+    return postList.map(post => {
+        const author = users.find(u => u.id === post.authorId);
+        // ⭐ CAMBIO: Ahora también obtenemos y enriquecemos los comentarios completos
+        const enrichedComments = comments
+            .filter(c => c.postId === post.id)
+            .map(comment => ({
+                ...comment,
+                author: users.find(u => u.id === comment.authorId)
+            }));
+        
+        const postReactions = reactions.filter(r => r.postId === post.id);
+
+        const groupedReactions = postReactions.reduce((acc, reaction) => {
+            acc[reaction.type] = (acc[reaction.type] || 0) + 1;
+            return acc;
+        }, {});
+
+        return {
+            ...post,
+            author,
+            commentCount: enrichedComments.length,
+            groupedReactions,
+            comments: enrichedComments // ⭐ CAMBIO: Añadimos los comentarios enriquecidos al objeto del post
+        };
+    });
+};
+
+const allPostsData = enrichPosts(posts);
+const userPostsData = enrichPosts(posts.filter(p => p.authorId === currentUser.id));
+const userCommentsData = comments
+    .filter(c => c.authorId === currentUser.id)
+    .map(comment => ({
+        ...comment,
+        post: posts.find(p => p.id === comment.postId)
+    }));
+---
+
+<main class="flex flex-col md:flex-row gap-6 p-4 md:p-8 bg-gray-900 text-white min-h-screen">
+    <aside class="w-full md:w-1/5 flex-shrink-0">
+        <div class="bg-gray-800 p-6 rounded-lg sticky top-8">
+            <h2 class="text-2xl font-bold mb-2">{currentUser.username}</h2>
+            <p class="text-gray-400">{currentUser.bio}</p>
+        </div>
+    </aside>
+
+    <section id="content-container" class="w-full md:w-3/5 space-y-6">
+        {allPostsData.map(post => (
+            // ⭐ CAMBIO: Añadimos un atributo data-post-id para identificar cada post
+            // y clases para indicar que es clickeable.
+            <article 
+                data-post-id={post.id} 
+                class="bg-gray-800 rounded-lg p-6 border border-gray-700 cursor-pointer transition-all duration-200 hover:border-blue-500 hover:shadow-lg"
+            >
+                <h3 class="text-2xl font-bold text-blue-400 mb-2">{post.title}</h3>
+                <p class="text-sm text-gray-500 mb-4">Publicado por {post.author.username}</p>
+                <p class="text-gray-300 whitespace-pre-line">{post.content}</p>
+                <div class="mt-4 flex items-center gap-4 text-gray-400">
+                    <div class="flex items-center gap-2">
+                        <span>💬</span>
+                        <span>{post.commentCount} Comentarios</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        {Object.entries(post.groupedReactions).map(([emoji, count]) => (
+                            <div class="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded-full text-sm">
+                                <span>{emoji}</span>
+                                <span>{count}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </article>
+        ))}
+    </section>
+
+    <aside class="w-full md:w-1/5 flex-shrink-0">
+        <div class="bg-gray-800 p-6 rounded-lg sticky top-8 space-y-4">
+            <h2 class="text-xl font-semibold border-b border-gray-700 pb-2">Filtros</h2>
+            <button id="show-all-btn" class="w-full text-left bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200">Todas las Publicaciones</button>
+            <button id="show-posts-btn" class="w-full text-left bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors duration-200">Mis Publicaciones</button>
+            <button id="show-comments-btn" class="w-full text-left bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors duration-200">Mis Comentarios</button>
+        </div>
+    </aside>
+</main>
+
+<script define:vars={{ allPostsData, userPostsData, userCommentsData }}>
+    const contentContainer = document.getElementById('content-container');
+    const showAllBtn = document.getElementById('show-all-btn');
+    const showPostsBtn = document.getElementById('show-posts-btn');
+    const showCommentsBtn = document.getElementById('show-comments-btn');
+
+    // --- FUNCIONES DE RENDERIZADO ---
+
+    const renderPosts = (posts) => {
+        if (posts.length === 0) {
+            return `<div class="bg-gray-800 text-center p-8 rounded-lg"><p class="text-gray-400">No hay publicaciones para mostrar.</p></div>`;
+        }
+        return posts.map(post => `
+            <article 
+                data-post-id="${post.id}" 
+                class="bg-gray-800 rounded-lg p-6 border border-gray-700 cursor-pointer transition-all duration-200 hover:border-blue-500 hover:shadow-lg"
+            >
+                <h3 class="text-2xl font-bold text-blue-400 mb-2">${post.title}</h3>
+                <p class="text-sm text-gray-500 mb-4">Publicado por ${post.author.username}</p>
+                <p class="text-gray-300 whitespace-pre-line">${post.content}</p>
+                <div class="mt-4 flex items-center gap-4 text-gray-400">
+                    <div class="flex items-center gap-2"><span>💬</span><span>${post.commentCount} Comentarios</span></div>
+                    <div class="flex items-center gap-3">
+                        ${Object.entries(post.groupedReactions).map(([emoji, count]) => `
+                            <div class="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded-full text-sm">
+                                <span>${emoji}</span><span>${count}</span>
+                            </div>`).join('')}
+                    </div>
+                </div>
+            </article>
+        `).join('');
+    };
+    
+    // ⭐ NUEVA FUNCIÓN: Para renderizar la vista detallada de un solo post
+    const renderPostDetail = (postId) => {
+        const post = allPostsData.find(p => p.id === postId);
+        if (!post) {
+            contentContainer.innerHTML = '<p>Post no encontrado.</p>';
+            return;
+        }
+
+        const commentsHtml = post.comments.length > 0 ? post.comments.map(comment => `
+            <div class="bg-gray-700 p-4 rounded-lg flex gap-4">
+                <div class="flex-shrink-0 font-bold text-blue-400">${comment.author.username}:</div>
+                <div class="text-gray-300">${comment.content}</div>
+            </div>
+        `).join('') : '<p class="text-gray-500">No hay comentarios aún.</p>';
+
+        contentContainer.innerHTML = `
+            <div>
+                <button onclick="renderInitialView()" class="mb-6 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition-colors duration-200">
+                    &larr; Volver a las publicaciones
+                </button>
+                <article class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <h3 class="text-3xl font-bold text-blue-400 mb-2">${post.title}</h3>
+                    <p class="text-sm text-gray-500 mb-4">Publicado por ${post.author.username}</p>
+                    <p class="text-gray-300 text-lg whitespace-pre-line">${post.content}</p>
+                    <div class="mt-6 flex items-center gap-3">
+                        ${Object.entries(post.groupedReactions).map(([emoji, count]) => `
+                            <div class="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded-full text-sm">
+                                <span>${emoji}</span><span>${count}</span>
+                            </div>`).join('')}
+                    </div>
+                </article>
+
+                <div class="mt-8">
+                    <h4 class="text-2xl font-semibold mb-4 border-b border-gray-700 pb-2">Comentarios</h4>
+                    <div class="space-y-4">
+                        ${commentsHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+    };
+
+    const renderComments = (comments) => {
+        // (Sin cambios en esta función)
+        if (comments.length === 0) {
+            return `<div class="bg-gray-800 text-center p-8 rounded-lg"><p class="text-gray-400">No tienes comentarios.</p></div>`;
+        }
+        return comments.map(comment => `
+            <article class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <p class="text-gray-400 text-sm mb-3">Tu comentario en la publicación: <span class="font-bold text-blue-400">"${comment.post.title}"</span></p>
+                <div class="bg-gray-900 p-4 rounded">
+                    <p class="text-gray-300">${comment.content}</p>
+                </div>
+            </article>
+        `).join('');
+    };
+
+    // --- MANEJO DE VISTAS Y EVENTOS ---
+
+    // ⭐ NUEVA FUNCIÓN: Para volver a la vista principal
+    const renderInitialView = () => {
+        contentContainer.innerHTML = renderPosts(allPostsData);
+    };
+    // La exponemos globalmente para que el `onclick` del botón "Volver" la pueda llamar
+    window.renderInitialView = renderInitialView;
+
+    showAllBtn.addEventListener('click', renderInitialView);
+    showPostsBtn.addEventListener('click', () => contentContainer.innerHTML = renderPosts(userPostsData));
+    showCommentsBtn.addEventListener('click', () => contentContainer.innerHTML = renderComments(userCommentsData));
+
+    // ⭐ CAMBIO CLAVE: Usamos delegación de eventos para manejar los clicks en los posts
+    contentContainer.addEventListener('click', (event) => {
+        const postArticle = event.target.closest('article[data-post-id]');
+        if (postArticle) {
+            const postId = parseInt(postArticle.dataset.postId, 10);
+            renderPostDetail(postId);
+        }
+    });
+
+</script>
