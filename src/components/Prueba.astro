@@ -1,0 +1,192 @@
+---
+// --- Configuración ---
+// Define las VMs que quieres mostrar.
+// El 'id' debe coincidir con los IDs de tu API (VM_IDS)
+// El 'name' es solo para mostrarlo en la tarjeta.
+const vms = [
+  { id: 100, name: "vm-100" },
+  { id: 101, name: "vm-101" },
+  { id: 102, name: "vm-102" },
+];
+// ---------------------
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+
+  {vms.map(vm => (
+    <div id={`vm-card-${vm.id}`} class="font-sans p-6 rounded-lg shadow-xl bg-gray-900 text-white max-w-sm border border-gray-700 transition-all duration-300">
+      
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-cyan-400">
+          <span id={`vm-name-${vm.id}`}>{vm.name}</span>
+        </h2>
+        <div class="flex items-center space-x-2">
+          <span id={`vm-status-text-${vm.id}`} class="font-semibold text-gray-400">
+            Cargando...
+          </span>
+          <div id={`vm-status-light-${vm.id}`} class="w-3 h-3 rounded-full bg-gray-600 transition-colors"></div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between mb-1 text-sm font-medium text-gray-300">
+            <span>CPU</span>
+            <span id={`cpu-percent-${vm.id}`}>--%</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2.5">
+            <div id={`cpu-bar-${vm.id}`} class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between mb-1 text-sm font-medium text-gray-300">
+            <span>RAM</span>
+            <span id={`ram-percent-${vm.id}`}>--%</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2.5">
+            <div id={`ram-bar-${vm.id}`} class="bg-green-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between mb-1 text-sm font-medium text-gray-300">
+            <span>Disco (Root)</span>
+            <span id={`disk-percent-${vm.id}`}>--%</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2.5">
+            <div id={`disk-bar-${vm.id}`} class="bg-purple-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 pt-3 border-t border-gray-700 text-center">
+        <span class="text-sm text-gray-400">Tiempo encendida:</span>
+        <span id={`vm-uptime-${vm.id}`} class="block text-lg font-semibold text-gray-200">--</span>
+      </div>
+    </div>
+  ))}
+</div>
+
+
+<script>
+  // Función para formatear segundos a un string legible
+  function formatUptime(seconds) {
+    if (!seconds || seconds <= 0) return 'Apagada';
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+
+    let parts = [];
+    if (d > 0) parts.push(`${d}d`);
+    if (h > 0) parts.push(`${h}h`);
+    if (m > 0) parts.push(`${m}m`);
+    
+    // Si tiene menos de 1 minuto, muestra 'Recién'
+    if (parts.length === 0 && seconds > 0) return 'Recién encendida';
+    
+    return parts.join(' ');
+  }
+
+  // --- FUNCIÓN PRINCIPAL DE ACTUALIZACIÓN ---
+  async function updateVmStatus() {
+    try {
+      // 1. Llama a NUESTRA API route
+      const response = await fetch('/api/monitor.json'); // Asegúrate que la ruta sea correcta
+      if (!response.ok) throw new Error('No se pudo cargar el estado de las VMs');
+
+      // 2. CORRECCIÓN: 'allVmData' es el ARRAY de datos
+      const allVmData = await response.json();
+
+      // 3. Recorremos el array, y actualizamos CADA tarjeta
+      allVmData.forEach(data => {
+        // 'data' es el objeto para UNA VM. Ej: { vmid: 100, status: 'running', ... }
+        const vmId = data.vmid;
+        
+        // Buscamos los elementos del DOM por su ID ÚNICO
+        const nameEl = document.getElementById(`vm-name-${vmId}`);
+        const statusLight = document.getElementById(`vm-status-light-${vmId}`);
+        const statusText = document.getElementById(`vm-status-text-${vmId}`);
+        const cpuPercentEl = document.getElementById(`cpu-percent-${vmId}`);
+        const cpuBarEl = document.getElementById(`cpu-bar-${vmId}`) as HTMLElement;
+        const ramPercentEl = document.getElementById(`ram-percent-${vmId}`);
+        const ramBarEl = document.getElementById(`ram-bar-${vmId}`) as HTMLElement;
+        const diskPercentEl = document.getElementById(`disk-percent-${vmId}`);
+        const diskBarEl = document.getElementById(`disk-bar-${vmId}`) as HTMLElement;
+        const uptimeEl = document.getElementById(`vm-uptime-${vmId}`);
+        
+        // Verificación: Si no encontramos los elementos, saltamos esta VM
+        if (!statusLight || !statusText) {
+          // console.warn(`No se encontraron elementos DOM para VM ${vmId}`);
+          return; // Sigue con la siguiente VM del 'forEach'
+        }
+        
+        // Manejar si la API devolvió un error para esta VM
+        if (data.status === 'error') {
+            statusText.textContent = 'Error API';
+            statusLight.classList.remove('bg-green-500', 'bg-gray-600');
+            statusLight.classList.add('bg-red-500'); // Luz roja para error
+            return;
+        }
+
+        // 4. Extraer y calcular los datos
+        const status = data.status; // "running" o "stopped"
+        const cpuUsage = data.cpu || 0;
+        const memUsage = data.mem || 0;
+        const maxMem = data.maxmem || 1;
+        const diskUsage = data.diskread || 0;
+        const maxDisk = data.maxdisk || 1;
+        const uptime = data.uptime || 0;
+        const vmName = data.name;
+
+        const cpuPercent = (cpuUsage * 100).toFixed(1);
+        const ramPercent = ((memUsage / maxMem) * 100).toFixed(1);
+        // El disco en Proxmox es el uso, no el %
+        const diskPercent = ((diskUsage / maxDisk) * 100).toFixed(1); 
+
+        if (nameEl) nameEl.textContent = vmName; // <-- 3. ACTUALIZAMOS EL NOMBRE
+
+        // 5. Actualizar el DOM (la página)
+        if (status === 'running') {
+          statusLight.classList.remove('bg-gray-600', 'bg-red-500');
+          statusLight.classList.add('bg-green-500');
+          statusText.textContent = 'Encendida';
+        } else {
+          statusLight.classList.remove('bg-green-500', 'bg-red-500');
+          statusLight.classList.add('bg-gray-600');
+          statusText.textContent = 'Apagada';
+        }
+
+        // Porcentajes
+        if(cpuPercentEl) cpuPercentEl.textContent = `${cpuPercent}%`;
+        if(ramPercentEl) ramPercentEl.textContent = `${ramPercent}%`;
+        if(diskPercentEl) diskPercentEl.textContent = `${diskPercent}%`;
+
+        // Barras de progreso
+        if(cpuBarEl) cpuBarEl.style.width = `${cpuPercent}%`;
+        if(ramBarEl) ramBarEl.style.width = `${ramPercent}%`;
+        if(diskBarEl) diskBarEl.style.width = `${diskPercent}%`;
+
+        // Uptime
+        if(uptimeEl) uptimeEl.textContent = formatUptime(uptime);
+      });
+
+    } catch (error) {
+      console.error("Error al actualizar datos de VMs:", error);
+      // Opcional: Poner todas las tarjetas en estado de error
+      document.querySelectorAll('[id^="vm-status-text-"]').forEach(el => {
+        el.textContent = 'Error';
+      });
+      document.querySelectorAll('[id^="vm-status-light-"]').forEach(el => {
+        el.classList.remove('bg-green-500', 'bg-gray-600');
+        el.classList.add('bg-red-500');
+      });
+    }
+  }
+
+  // 6. Ejecutar la función
+  // Llama a la función cuando la página cargue...
+  document.addEventListener('DOMContentLoaded', updateVmStatus);
+  // ...y luego repítela cada 5 segundos (5000 ms)
+  setInterval(updateVmStatus, 5000);
+</script>
