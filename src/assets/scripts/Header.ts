@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     userDropdown.innerHTML = isLoggedIn
       ? `
         <a href="/profile" class="block px-4 py-2 text-sm text-white">Tu perfil</a>
-        ${userRole === "admin" ? `<a href="/admin" class="block px-4 py-2 text-sm text-red-600">Administración</a>` : ""}
+        ${userRole === "admin" ? `<a href="/admin" class="block px-4 py-2 text-sm text-[#64ffd6]">Administración</a>` : ""}
         <a href="#" id="logout-link" class="block px-4 py-2 text-sm text-white">Cerrar sesión</a>
       `
       : `

@@ -1,103 +1,109 @@
 ---
 ---
 
-<div class="w-full text-gray-200" client:load>
+<div class="w-full mx-auto lg:grid lg:grid-cols-12 lg:gap-8 p-12">
 
-  <h2 class="text-2xl font-semibold text-light mb-4">Gestión del Carrusel</h2>
-  
-  <div class="rounded-lg border border-dark-accent overflow-hidden">
-    <table class="w-full min-w-full divide-y divide-dark-accent">
-      
-      <thead class="bg-dark-secondary">
-        <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Imagen</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Título</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Descripción</th>
-          <th class="px-6 py-3 text-right text-xs font-medium text-light uppercase tracking-wider">Acciones</th>
-        </tr>
-      </thead>
-      
-      <tbody id="carousel-table-body" class="bg-dark-tertiary divide-y divide-dark-accent">
-        <tr>
-          <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-400">
-            Cargando elementos...
-          </td>
-        </tr>
-      </tbody>
-      
-    </table>
+  <div class="lg:col-span-6">
+    <h2 class="text-2xl font-semibold text-light mb-4">Gestión del Carrusel</h2>
+    
+    <div class="rounded-lg border border-dark-accent overflow-hidden">
+      <table class="w-full min-w-full divide-y divide-dark-accent">
+        
+        <thead class="bg-dark-secondary">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Imagen</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Título</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Descripción</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-light uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        
+        <tbody id="carousel-table-body" class="bg-dark-tertiary divide-y divide-dark-accent">
+          <tr>
+            <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-400">
+              Cargando elementos...
+            </td>
+          </tr>
+        </tbody>
+        
+      </table>
+    </div>
+    <p id="carousel-list-status" class="text-gray-400 mt-4"></p>
   </div>
-  <p id="carousel-list-status" class="text-gray-400 mt-4"></p>
-
-
-  <h3 class="text-xl font-semibold text-light mb-4 mt-8">Subir Nuevo Elemento</h3>
   
-  <form id="carousel-form-create" enctype="multipart/form-data" 
-        class="bg-dark-secondary p-6 rounded-lg border border-dark-accent space-y-4">
+
+  <div class="lg:col-span-6">
+
+    <h3 class="text-xl font-semibold text-light mb-4">Subir Nuevo Elemento</h3>
     
-    <div>
-      <label for="create-title" class="block text-sm font-medium text-light mb-1">
-        Título:
-      </label>
-      <input 
-        type="text" 
-        name="title" 
-        id="create-title" 
-        required 
-        class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light" 
-      />
-    </div>
-    
-    <div>
-      <label for="create-description" class="block text-sm font-medium text-light mb-1">
-        Descripción:
-      </label>
-      <textarea 
-        name="description" 
-        id="create-description" 
-        required 
-        rows="3"
-        class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light"
-      ></textarea>
-    </div>
-    
-    <div>
-      <label for="create-image" class="block text-sm font-medium text-light mb-1">
-        Imagen:
-      </label>
-      <input 
-        type="file" 
-        name="image" 
-        id="create-image" 
-        accept="image/*" 
-        required
-        class="block w-full text-sm text-gray-400
-               file:mr-4 file:py-2 file:px-4
-               file:rounded-md file:border-0 file:text-sm file:font-semibold
-               file:bg-light file:text-dark-primary
-               hover:file:bg-opacity-80 cursor-pointer"
-      />
-    </div>
-    
-    <div class="flex items-center gap-4">
-      <button 
-        type="submit"
-        id="carousel-submit-btn"
-        class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80
-               disabled:bg-gray-500 disabled:cursor-not-allowed"
-      >
-        Subir
-      </button>
-      <span id="carousel-upload-status" class="text-gray-400"></span>
-    </div>
-    
-  </form>
+    <form id="carousel-form-create" enctype="multipart/form-data" 
+          class="bg-dark-secondary p-6 rounded-lg border border-dark-accent space-y-4">
+      
+      <div>
+        <label for="create-title" class="block text-sm font-medium text-light mb-1">
+          Título:
+        </label>
+        <input 
+          type="text" 
+          name="title" 
+          id="create-title" 
+          required 
+          class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light" 
+        />
+      </div>
+      
+      <div>
+        <label for="create-description" class="block text-sm font-medium text-light mb-1">
+          Descripción:
+        </label>
+        <textarea 
+          name="description" 
+          id="create-description" 
+          required 
+          rows="3"
+          class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light"
+        ></textarea>
+      </div>
+      
+      <div>
+        <label for="create-image" class="block text-sm font-medium text-light mb-1">
+          Imagen:
+        </label>
+        <input 
+          type="file" 
+          name="image" 
+          id="create-image" 
+          accept="image/*" 
+          required
+          class="block w-full text-sm text-gray-400
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0 file:text-sm file:font-semibold
+                file:bg-light file:text-dark-primary
+                hover:file:bg-opacity-80 cursor-pointer"
+        />
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <button 
+          type="submit"
+          id="carousel-submit-btn"
+          class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80
+                disabled:bg-gray-500 disabled:cursor-not-allowed"
+        >
+          Subir
+        </button>
+        <span id="carousel-upload-status" class="text-gray-400"></span>
+      </div>
+      
+    </form>
+
+  </div>
 </div>
 
 
 <div 
   id="edit-modal" 
-  class="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50 hidden"
+  class="fixed inset-0 bg-black bg-opacity-75 justify-center items-center z-50 hidden"
 >
   <div class="bg-dark-secondary p-8 rounded-lg border border-dark-accent w-full max-w-2xl space-y-4">
     <h3 class="text-xl font-semibold text-light">Editar Elemento del Carrusel</h3>
@@ -176,7 +182,6 @@
     if (!tableBody || !statusMessage) return;
 
     try {
-      statusMessage.textContent = 'Cargando elementos...';
       
       const response = await fetch('/api/carousel'); 
       if (!response.ok) throw new Error('No se pudo conectar al servidor.');

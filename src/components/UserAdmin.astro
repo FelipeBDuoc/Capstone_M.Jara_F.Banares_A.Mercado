@@ -1,7 +1,7 @@
 ---
 ---
 
-<div class="w-full text-gray-200" client:load>
+<div class="w-full text-gray-200 p-12">
   
   <div class="flex justify-between items-center mb-4 gap-4">
     
@@ -22,8 +22,8 @@
     />
   </div>
 
-  <div class="rounded-lg border border-dark-accent overflow-hidden">
-    <table class="w-full min-w-full divide-y divide-dark-accent">
+  <div class="rounded-lg border border-[#64ffd6] shadow-lg shadow-[#00ffbb]/25 overflow-hidden">
+    <table class="w-full min-w-full divide-y divide-[#64ffd6]">
       <thead class="bg-dark-secondary">
         <tr>
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Usuario</th>
@@ -32,7 +32,7 @@
           <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Rol</th>
         </tr>
       </thead>
-      <tbody id="user-table-body" class="bg-dark-tertiary divide-y divide-dark-accent">
+      <tbody id="user-table-body" class="divide-y divide-[#64ffd6]">
         </tbody>
     </table>
   </div>
@@ -89,7 +89,7 @@
     return `
       <select 
         data-user-id="${userId}" 
-        class="role-selector bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2"
+        class="role-selector bg-[#1e2124] border border-dark-highlight text-gray-200 rounded-md p-2"
       >
         ${optionsHtml}
       </select>

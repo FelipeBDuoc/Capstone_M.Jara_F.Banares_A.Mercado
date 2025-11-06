@@ -3,7 +3,6 @@
 import { Image } from "astro:assets";
 import logo from "../assets/imgs/N-com.png";
 import icono from "../assets/imgs/N-icon.png";
-const { isLoggedIn, userRole } = Astro.props;
 
 ---
 <nav>
@@ -46,11 +45,9 @@ const { isLoggedIn, userRole } = Astro.props;
                 </div>
             <div class="hidden sm:ml-6 sm:block">
                 <div class="flex space-x-4">
-                    <!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
                     <a href="/foro" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Foro</a>
-                    <a href="#" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Bots</a>
+                    <a href="https://b0tk.github.io/dj-web/" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Bots</a>
                     <a href="#" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Proyectos</a>
-                    <!--<a href="#" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Calendar</a> -->
                 </div>
             </div>
             </div>
@@ -112,10 +109,9 @@ const { isLoggedIn, userRole } = Astro.props;
   <div class="sm:hidden" id="mobile-menu">
     <div class="space-y-1 px-2 pt-2 pb-3">
       <!-- Current: "bg-gray-900 text-white", Default: "text-gray-300 hover:bg-gray-700 hover:text-white" -->
-      <a href="/admin" class="block rounded-md bg-gray-900 px-3 py-2 text-base font-medium text-white" aria-current="page">Admin</a>
-      <a href="#" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Bots</a>
+      <a href="/foro" class="block rounded-md bg-gray-900 px-3 py-2 text-base font-medium text-white" aria-current="page">Foro</a>
+      <a href="https://b0tk.github.io/dj-web/" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Bots</a>
       <a href="#" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Projects</a>
-      <a href="#" class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white">Calendar</a>
     </div>
   </div>
 </nav>
