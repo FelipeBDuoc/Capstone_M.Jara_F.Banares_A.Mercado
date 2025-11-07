@@ -12,7 +12,7 @@ const wss = new WebSocket.Server({ server, path: '/ssh' });
 // Configuración de TUS máquinas con DNS de No-IP
 const virtualMachines = [
   { 
-    id: 1, 
+    id: 100, 
     name: "Servidor Ubuntu", 
     status: "En línea", 
     host: "amercado.ddns.net",  // Tu DNS de No-IP para Ubuntu
@@ -21,10 +21,10 @@ const virtualMachines = [
     password: "Cachuga123" // Reemplaza con tu password real
   },
   { 
-    id: 2, 
+    id: 101, 
     name: "Servidor Windows", 
     status: "En línea", 
-    host: "tunamayo.ddns.net",  // Tu DNS de No-IP para Windows
+    host: "amercado.ddns.net",  // Tu DNS de No-IP para Windows
     port: 2222,                 // Puerto SSH default
     username: "Tuna Mayo", // Reemplaza con tu usuario real
     password: "Cachuga123" // Reemplaza con tu password real
