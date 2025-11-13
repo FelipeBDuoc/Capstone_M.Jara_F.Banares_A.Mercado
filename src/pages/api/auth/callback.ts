@@ -33,10 +33,54 @@ interface UserSession {
 export async function GET(context: APIContext) {
   const { url, cookies, redirect } = context;
 
-  // --- 1. OBTENER EL CÓDIGO DE DISCORD ---
   const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+  const errorDescription = url.searchParams.get("error_description");
+
+  if (error) {
+    let userMessage = "";
+    
+    switch (error) {
+      case "access_denied":
+        userMessage = "access_denied";
+        return redirect('/', 302);
+        
+      
+      case "server_error":
+        userMessage = "server_error";
+        break;
+      case "temporarily_unavailable":
+        userMessage = "temporarily_unavailable";
+        break;
+
+      // Errores de desarrollador (configuración)
+      case "invalid_request":
+        userMessage = "invalid_request";
+        break;
+      case "invalid_scope":
+        userMessage = "invalid_scope";
+        break;
+      case "unauthorized_client":
+        userMessage = "unauthorized_client";
+        break;
+      case "unsupported_response_type":
+        userMessage = "unsupported_response_type";
+        // ¡Registra este error para que TÚ puedas arreglarlo!
+        console.error(`¡Error de OAuth! ${error}: ${errorDescription}`);
+        break;
+
+      default:
+        userMessage = `Error desconocido: ${errorDescription || error}`;
+        console.error(`Error de OAuth no manejado: ${error}: ${errorDescription}`);
+    }
+    
+    // Redirigir a la página de inicio con el mensaje de error específico
+    return redirect(`/?error=${encodeURIComponent(userMessage)}`, 302);
+  }
+
+  // --- 1. OBTENER EL CÓDIGO DE DISCORD ---
   if (!code) {
-    return new Response("No se recibió el código de Discord", { status: 400 });
+    return redirect(`/?error=${encodeURIComponent("Error desconocido: No se recibió código ni error.")}`, 302);
   }
 
   // --- 2. OBTENER VARIABLES DE ENTORNO ---
