@@ -1,0 +1,372 @@
+---
+---
+
+<div class="w-full mx-auto lg:grid lg:grid-cols-12 lg:gap-8 p-12">
+
+  <div class="lg:col-span-7">
+    <h2 class="text-2xl font-semibold text-light mb-4">Gestión de Publicaciones</h2>
+    
+    <div class="rounded-lg border border-dark-accent overflow-hidden">
+      <table class="w-full min-w-full divide-y divide-dark-accent">
+        <thead class="bg-dark-secondary">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Imagen</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Título</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Vigencia</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-light uppercase tracking-wider">Acciones</th>
+          </tr>
+        </thead>
+        
+        <tbody id="news-table-body" class="bg-dark-tertiary divide-y divide-dark-accent">
+          <tr>
+            <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-400">
+              Cargando publicaciones...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p id="news-list-status" class="text-gray-400 mt-4"></p>
+  </div>
+  
+  <div class="lg:col-span-5">
+    <h3 class="text-xl font-semibold text-light mb-4">Crear Nueva Publicación</h3>
+    
+    <form id="news-form-create" enctype="multipart/form-data" 
+          class="bg-dark-secondary p-6 rounded-lg border border-dark-accent space-y-4">
+      
+      <div>
+        <label for="create-title" class="block text-sm font-medium text-light mb-1">Título:</label>
+        <input type="text" name="title" id="create-title" required 
+          class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light" />
+      </div>
+      
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="create-postDate" class="block text-sm font-medium text-light mb-1">Publicación:</label>
+          <input type="date" name="postDate" id="create-postDate" required 
+            class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2" />
+        </div>
+        <div>
+          <label for="create-downDate" class="block text-sm font-medium text-light mb-1">Bajada:</label>
+          <input type="date" name="downDate" id="create-downDate" required 
+            class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2" />
+        </div>
+      </div>
+
+      <div>
+        <label for="create-description" class="block text-sm font-medium text-light mb-1">Descripción:</label>
+        <textarea name="description" id="create-description" required rows="3"
+          class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light"></textarea>
+      </div>
+      
+      <div>
+        <label for="create-image" class="block text-sm font-medium text-light mb-1">Imagen:</label>
+        <input type="file" name="image" id="create-image" accept="image/*" required
+          class="block w-full text-sm text-gray-400
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-md file:border-0 file:text-sm file:font-semibold
+                file:bg-light file:text-dark-primary
+                hover:file:bg-opacity-80 cursor-pointer" />
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <button type="submit" id="news-submit-btn"
+          class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80 disabled:bg-gray-500 disabled:cursor-not-allowed">
+          Subir Publicación
+        </button>
+        <span id="news-upload-status" class="text-gray-400 text-sm"></span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div 
+  id="news-edit-modal" 
+  class="fixed inset-0 bg-black/80 flex justify-center items-center z-[999] hidden backdrop-blur-sm"
+>
+  <div class="bg-dark-secondary p-8 rounded-lg border border-dark-accent w-full max-w-2xl space-y-4 shadow-2xl relative">
+    <h3 class="text-xl font-semibold text-light">Editar Publicación</h3>
+    
+    <form id="news-form-edit" enctype="multipart/form-data" class="space-y-4">
+      
+      <input type="hidden" name="id" id="news-edit-id" />
+      
+      <div>
+        <label for="news-edit-title" class="block text-sm font-medium text-light mb-1">Título:</label>
+        <input type="text" name="title" id="news-edit-title" required 
+               class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label for="news-edit-postDate" class="block text-sm font-medium text-light mb-1">Publicación:</label>
+          <input type="date" name="postDate" id="news-edit-postDate" required 
+                 class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2" />
+        </div>
+        <div>
+          <label for="news-edit-downDate" class="block text-sm font-medium text-light mb-1">Bajada:</label>
+          <input type="date" name="downDate" id="news-edit-downDate" required 
+                 class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2" />
+        </div>
+      </div>
+      
+      <div>
+        <label for="news-edit-description" class="block text-sm font-medium text-light mb-1">Descripción:</label>
+        <textarea name="description" id="news-edit-description" required rows="3"
+                  class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2"></textarea>
+      </div>
+      
+      <div>
+        <label for="news-edit-image" class="block text-sm font-medium text-light mb-1">Reemplazar Imagen (Opcional):</label>
+        <div class="flex items-center gap-4">
+          <img id="news-edit-image-preview" src="" alt="Previsualización" class="w-20 h-14 object-cover rounded-md bg-dark-accent border border-dark-highlight" />
+          <input type="file" name="image" id="news-edit-image" accept="image/*"
+                 class="block w-full text-sm text-gray-400
+                        file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0
+                        file:bg-light file:text-dark-primary hover:file:bg-opacity-80" />
+        </div>
+      </div>
+      
+      <div class="flex justify-between items-center pt-4 border-t border-dark-accent mt-4">
+        
+        <button 
+          type="button" id="news-edit-delete-btn"
+          class="px-4 py-2 text-sm font-semibold text-red-500 border border-red-900/30 bg-red-900/10 rounded-md transition-all hover:bg-red-900/30 hover:text-red-400"
+        >
+          Eliminar Publicación
+        </button>
+
+        <div class="flex gap-4">
+          <button 
+            type="button" id="news-edit-cancel-btn"
+            class="px-5 py-2 font-semibold text-gray-200 bg-dark-accent rounded-md transition-all hover:bg-dark-highlight"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" id="news-edit-submit-btn"
+            class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80 disabled:bg-gray-500"
+          >
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+      <p id="news-edit-upload-status" class="text-gray-400 text-right text-sm mt-2"></p>
+    </form>
+  </div>
+</div>
+
+
+<script>
+  const editModal = document.getElementById('news-edit-modal');
+  const editForm = document.getElementById('news-form-edit');
+  const cancelBtn = document.getElementById('news-edit-cancel-btn');
+  const editSubmitBtn = document.getElementById('news-edit-submit-btn');
+  const deleteBtn = document.getElementById('news-edit-delete-btn');
+  const editStatusText = document.getElementById('news-edit-upload-status');
+  const idInput = document.getElementById('news-edit-id');
+  const titleInput = document.getElementById('news-edit-title');
+  const descInput = document.getElementById('news-edit-description');
+  const postDateInput = document.getElementById('news-edit-postDate'); 
+  const downDateInput = document.getElementById('news-edit-downDate'); 
+  const imgPreview = document.getElementById('news-edit-image-preview');
+  const fileInput = document.getElementById('news-edit-image');
+
+  function formatDateForInput(isoDateString) {
+    if (!isoDateString) return '';
+    return isoDateString.split('T')[0];
+  }
+  function formatDateForDisplay(isoDateString) {
+    if (!isoDateString) return '-';
+    return new Date(isoDateString).toLocaleDateString('es-CL', { timeZone: 'UTC' });
+  }
+
+  async function fetchAndRenderItems() {
+    const tableBody = document.getElementById('news-table-body');
+    const statusMessage = document.getElementById('news-list-status');
+    
+    if (!tableBody || !statusMessage) return;
+
+    try {
+      const response = await fetch('/api/news'); 
+      if (!response.ok) throw new Error('Error de conexión');
+
+      const items = await response.json();
+      tableBody.innerHTML = ''; 
+      
+      if (items.length === 0) {
+        statusMessage.textContent = 'No hay publicaciones activas.';
+        tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">No se encontraron elementos.</td></tr>`;
+        return;
+      }
+
+      statusMessage.textContent = ''; 
+
+      items.forEach(item => {
+        const row = document.createElement('tr');
+        const itemJson = encodeURIComponent(JSON.stringify(item));
+
+        row.innerHTML = `
+          <td class="px-4 py-4">
+            <img src="${item.imageUrl}" alt="${item.title}" class="w-16 h-10 object-cover rounded bg-dark-accent" />
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap">
+            <div class="font-bold text-white text-sm">${item.title}</div>
+          </td>
+          <td class="px-4 py-4 text-xs text-gray-300">
+            <div class="flex flex-col">
+                <span class="text-[#00ffbb]">In: ${formatDateForDisplay(item.postDate)}</span>
+                <span class="text-red-400">Out: ${formatDateForDisplay(item.downDate)}</span>
+            </div>
+          </td>
+          <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <button class="edit-btn text-light hover:text-[#00ffbb] transition-colors font-medium" data-item="${itemJson}">
+              Editar
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      tableBody.innerHTML = '';
+      statusMessage.textContent = 'Error al cargar los elementos.';
+    }
+  }
+
+  function setupUploadForm() {
+    const form = document.getElementById('news-form-create'); 
+    const submitBtn = document.getElementById('news-submit-btn');
+    const statusText = document.getElementById('news-upload-status');
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      statusText.textContent = 'Subiendo...';
+      const formData = new FormData(form);
+      try {
+        const res = await fetch('/api/news', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Error al subir');
+        
+        statusText.textContent = '¡Publicación creada!';
+        statusText.classList.add('text-[#00ffbb]');
+        form.reset();
+        fetchAndRenderItems();
+        setTimeout(() => { 
+            statusText.textContent = ''; 
+            statusText.classList.remove('text-[#00ffbb]');
+        }, 3000);
+      } catch (error) {
+        statusText.textContent = `Error: ${error.message}`;
+        statusText.classList.add('text-red-500');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  function openEditModal(item) {
+    idInput.value = item.id;
+    titleInput.value = item.title;
+    descInput.value = item.description;
+    postDateInput.value = formatDateForInput(item.postDate);
+    downDateInput.value = formatDateForInput(item.downDate);
+    imgPreview.src = item.imageUrl;
+    fileInput.value = null; 
+    editStatusText.textContent = '';
+    editModal.classList.remove('hidden');
+  }
+
+  function closeEditModal() {
+    editModal.classList.add('hidden');
+  }
+
+  // --- EDICIÓN (PATCH) ---
+  async function handleEditSubmit(e) {
+    e.preventDefault();
+    editSubmitBtn.disabled = true;
+    editStatusText.textContent = 'Guardando...';
+
+    const formData = new FormData(editForm);
+
+    try {
+      const res = await fetch('/api/news', { method: 'PATCH', body: formData });
+      if (!res.ok) throw new Error('Error al guardar');
+      
+      editStatusText.textContent = '¡Guardado!';
+      editStatusText.classList.add('text-[#00ffbb]');
+      setTimeout(() => {
+        closeEditModal();
+        fetchAndRenderItems(); 
+        editStatusText.classList.remove('text-[#00ffbb]');
+      }, 1000);
+    } catch (error) {
+      editStatusText.textContent = `Error: ${error.message}`;
+      editStatusText.classList.add('text-red-500');
+    } finally {
+      editSubmitBtn.disabled = false;
+    }
+  }
+
+  async function handleDelete() {
+    const id = idInput.value;
+    if (!id) return;
+
+    if (!confirm('¿Estás seguro de borrar esta publicación permanentemente?')) return;
+
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Eliminando...';
+    editStatusText.textContent = 'Procesando...';
+
+    try {
+      const res = await fetch('/api/news', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }) 
+      });
+
+      if (!res.ok) throw new Error('Error al eliminar');
+
+      editStatusText.textContent = '¡Eliminado!';
+      editStatusText.classList.add('text-red-500');
+      
+      setTimeout(() => {
+        closeEditModal();
+        fetchAndRenderItems();
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Eliminar Publicación';
+        editStatusText.classList.remove('text-red-500');
+      }, 1000);
+
+    } catch (error) {
+      editStatusText.textContent = `Error: ${error.message}`;
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = 'Eliminar Publicación';
+    }
+  }
+
+  function setupEditModalListeners() {
+    const tableBody = document.getElementById('news-table-body');
+
+    tableBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('.edit-btn');
+      if (btn) {
+        const itemJson = decodeURIComponent(btn.dataset.item);
+        openEditModal(JSON.parse(itemJson));
+      }
+    });
+
+    cancelBtn.addEventListener('click', closeEditModal);
+    editForm.addEventListener('submit', handleEditSubmit);
+    
+    if(deleteBtn) deleteBtn.addEventListener('click', handleDelete);
+  }
+
+  fetchAndRenderItems();
+  setupUploadForm();
+  setupEditModalListeners();
+</script>

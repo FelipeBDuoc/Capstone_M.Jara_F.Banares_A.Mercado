@@ -31,7 +31,6 @@
     <p id="carousel-list-status" class="text-gray-400 mt-4"></p>
   </div>
   
-
   <div class="lg:col-span-6">
 
     <h3 class="text-xl font-semibold text-light mb-4">Subir Nuevo Elemento</h3>
@@ -44,10 +43,7 @@
           Título:
         </label>
         <input 
-          type="text" 
-          name="title" 
-          id="create-title" 
-          required 
+          type="text" name="title" id="create-title" required 
           class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light" 
         />
       </div>
@@ -57,10 +53,7 @@
           Descripción:
         </label>
         <textarea 
-          name="description" 
-          id="create-description" 
-          required 
-          rows="3"
+          name="description" id="create-description" required rows="3"
           class="w-full bg-dark-accent border border-dark-highlight text-gray-200 rounded-md p-2 focus:ring-light focus:border-light"
         ></textarea>
       </div>
@@ -70,11 +63,7 @@
           Imagen:
         </label>
         <input 
-          type="file" 
-          name="image" 
-          id="create-image" 
-          accept="image/*" 
-          required
+          type="file" name="image" id="create-image" accept="image/*" required
           class="block w-full text-sm text-gray-400
                 file:mr-4 file:py-2 file:px-4
                 file:rounded-md file:border-0 file:text-sm file:font-semibold
@@ -85,10 +74,8 @@
       
       <div class="flex items-center gap-4">
         <button 
-          type="submit"
-          id="carousel-submit-btn"
-          class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80
-                disabled:bg-gray-500 disabled:cursor-not-allowed"
+          type="submit" id="carousel-submit-btn"
+          class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80 disabled:bg-gray-500 disabled:cursor-not-allowed"
         >
           Subir
         </button>
@@ -100,12 +87,11 @@
   </div>
 </div>
 
-
 <div 
   id="edit-modal" 
-  class="fixed inset-0 bg-black bg-opacity-75 justify-center items-center z-50 hidden"
+  class="fixed inset-0 bg-black/80 flex justify-center items-center z-[999] hidden backdrop-blur-sm"
 >
-  <div class="bg-dark-secondary p-8 rounded-lg border border-dark-accent w-full max-w-2xl space-y-4">
+  <div class="bg-dark-secondary p-8 rounded-lg border border-dark-accent w-full max-w-2xl space-y-4 shadow-2xl relative">
     <h3 class="text-xl font-semibold text-light">Editar Elemento del Carrusel</h3>
     
     <form id="carousel-form-edit" enctype="multipart/form-data">
@@ -136,35 +122,42 @@
         <p class="text-xs text-gray-400 mt-1">Si no seleccionas un archivo nuevo, se conservará la imagen actual.</p>
       </div>
       
-      <div class="flex justify-end items-center gap-4 pt-4">
+      <div class="flex justify-between items-center pt-4 border-t border-dark-accent mt-4">
+        
         <button 
-          type="button"
-          id="edit-cancel-btn"
-          class="px-5 py-2 font-semibold text-gray-200 bg-dark-accent rounded-md transition-all hover:bg-dark-highlight"
+          type="button" id="edit-delete-btn"
+          class="px-4 py-2 text-sm font-semibold text-red-500 border border-red-900/30 bg-red-900/10 rounded-md transition-all hover:bg-red-900/30 hover:text-red-400"
         >
-          Cancelar
+          Eliminar Elemento
         </button>
-        <button 
-          type="submit"
-          id="edit-submit-btn"
-          class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80
-                 disabled:bg-gray-500"
-        >
-          Guardar Cambios
-        </button>
+
+        <div class="flex gap-4">
+          <button 
+            type="button" id="edit-cancel-btn"
+            class="px-5 py-2 font-semibold text-gray-200 bg-dark-accent rounded-md transition-all hover:bg-dark-highlight"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" id="edit-submit-btn"
+            class="px-5 py-2 font-semibold text-dark-primary bg-light rounded-md transition-all hover:bg-opacity-80 disabled:bg-gray-500"
+          >
+            Guardar Cambios
+          </button>
+        </div>
       </div>
-      <p id="edit-upload-status" class="text-gray-400 text-right"></p>
+      <p id="edit-upload-status" class="text-gray-400 text-right mt-2"></p>
     </form>
   </div>
 </div>
 
 
 <script>
-  // --- REFERENCIAS A ELEMENTOS DEL MODAL (globales al script) ---
   const editModal = document.getElementById('edit-modal');
   const editForm = document.getElementById('carousel-form-edit');
   const cancelBtn = document.getElementById('edit-cancel-btn');
   const editSubmitBtn = document.getElementById('edit-submit-btn');
+  const deleteBtn = document.getElementById('edit-delete-btn'); // Nueva referencia
   const editStatusText = document.getElementById('edit-upload-status');
   const idInput = document.getElementById('edit-id');
   const titleInput = document.getElementById('edit-title');
@@ -172,9 +165,6 @@
   const imgPreview = document.getElementById('edit-image-preview');
   const fileInput = document.getElementById('edit-image');
 
-  /**
-   * Busca los elementos del carrusel en la API y los muestra en la tabla
-   */
   async function fetchAndRenderItems() {
     const tableBody = document.getElementById('carousel-table-body');
     const statusMessage = document.getElementById('carousel-list-status');
@@ -182,35 +172,25 @@
     if (!tableBody || !statusMessage) return;
 
     try {
-      
       const response = await fetch('/api/carousel'); 
       if (!response.ok) throw new Error('No se pudo conectar al servidor.');
 
       const items = await response.json();
-      
-      tableBody.innerHTML = ''; // Limpiamos la tabla
+      tableBody.innerHTML = ''; 
       
       if (items.length === 0) {
         statusMessage.textContent = 'No hay elementos en el carrusel.';
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="4" class="px-6 py-4 whitespace-nowrap text-center text-gray-400">
-              No se encontraron elementos.
-            </td>
-          </tr>
-        `;
+        tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">No se encontraron elementos.</td></tr>`;
         return;
       }
 
-      statusMessage.textContent = ''; // Limpiamos el mensaje de estado
+      statusMessage.textContent = ''; 
 
       items.forEach(item => {
         const row = document.createElement('tr');
         const shortDesc = item.description.length > 60 ? item.description.substring(0, 60) + '...' : item.description;
 
-        // Convertimos el objeto 'item' a un string JSON para guardarlo en el botón
-        // Usamos comillas simples en el HTML y dobles dentro del JSON
-        const itemJson = JSON.stringify(item).replace(/"/g, "'");
+        const itemJson = encodeURIComponent(JSON.stringify(item));
 
         row.innerHTML = `
           <td class="px-6 py-4">
@@ -223,10 +203,7 @@
             ${shortDesc}
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button
-              class="edit-btn text-light hover:text-opacity-80 font-medium"
-              data-item="${itemJson}" 
-            >
+            <button class="edit-btn text-light hover:text-opacity-80 font-medium" data-item="${itemJson}">
               Editar
             </button>
           </td>
@@ -234,56 +211,38 @@
         tableBody.appendChild(row);
       });
 
-    } catch (error)
-    {
-      console.error('Error al cargar elementos del carrusel:', error);
+    } catch (error) {
+      console.error('Error:', error);
       tableBody.innerHTML = '';
       statusMessage.textContent = 'Error al cargar los elementos.';
     }
   }
 
-  /**
-   * Configura el listener para el formulario de subida (CREACIÓN)
-   */
   function setupUploadForm() {
     const form = document.getElementById('carousel-form-create');
     const submitBtn = document.getElementById('carousel-submit-btn');
     const statusText = document.getElementById('carousel-upload-status');
 
-    if (!form || !submitBtn || !statusText) {
-      console.warn("Elementos del formulario de creación no encontrados");
-      return;
-    }
+    if (!form) return;
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
       submitBtn.disabled = true;
       statusText.textContent = 'Subiendo imagen...';
 
       const formData = new FormData(form);
 
       try {
-        const res = await fetch('/api/carousel', {
-          method: 'POST',
-          body: formData,
-        });
-
+        const res = await fetch('/api/carousel', { method: 'POST', body: formData });
         if (!res.ok) {
           const errorData = await res.json();
-          throw new Error(errorData.error || 'Error desconocido del servidor');
+          throw new Error(errorData.error || 'Error desconocido');
         }
-
-        statusText.textContent = '¡Elemento subido con éxito!';
+        statusText.textContent = '¡Elemento subido!';
         form.reset();
-        
-        // Volvemos a cargar la lista para que se vea el nuevo item
         fetchAndRenderItems();
-        
         setTimeout(() => { statusText.textContent = ''; }, 3000);
-
       } catch (error) {
-        console.error('Error inesperado:', error);
         statusText.textContent = `Error: ${error.message}`;
       } finally {
         submitBtn.disabled = false;
@@ -291,29 +250,20 @@
     });
   }
 
-  /**
-   * Abre el modal y rellena los campos con los datos del item
-   */
   function openEditModal(item) {
     idInput.value = item.id;
     titleInput.value = item.title;
     descInput.value = item.description;
     imgPreview.src = item.imageUrl;
-    fileInput.value = null; // Limpiar el input de archivo
+    fileInput.value = null; 
     editStatusText.textContent = '';
     editModal.classList.remove('hidden');
   }
 
-  /**
-   * Cierra el modal
-   */
   function closeEditModal() {
     editModal.classList.add('hidden');
   }
 
-  /**
-   * Maneja el envío del formulario de EDICIÓN
-   */
   async function handleEditSubmit(e) {
     e.preventDefault();
     editSubmitBtn.disabled = true;
@@ -322,24 +272,16 @@
     const formData = new FormData(editForm);
 
     try {
-      const res = await fetch('/api/carousel', {
-        method: 'PATCH', // Usamos PATCH
-        body: formData,
-      });
-
+      const res = await fetch('/api/carousel', { method: 'PATCH', body: formData });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Error desconocido');
       }
-      
       editStatusText.textContent = '¡Guardado con éxito!';
-      
-      // Esperamos un segundo, cerramos el modal y recargamos la lista
       setTimeout(() => {
         closeEditModal();
-        fetchAndRenderItems(); // Recargamos la tabla
+        fetchAndRenderItems(); 
       }, 1000);
-
     } catch (error) {
       editStatusText.textContent = `Error: ${error.message}`;
     } finally {
@@ -347,34 +289,56 @@
     }
   }
 
-  /**
-   * Configura todos los listeners del modal y los botones "Editar"
-   */
+  async function handleDelete() {
+    const id = idInput.value;
+    if (!id) return;
+
+    if (!confirm('¿Estás seguro de eliminar este elemento permanentemente?')) return;
+
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = 'Eliminando...';
+    editStatusText.textContent = 'Procesando...';
+
+    try {
+      const res = await fetch('/api/carousel', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+
+      if (!res.ok) throw new Error('Error al eliminar');
+      
+      editStatusText.textContent = '¡Elemento eliminado!';
+      setTimeout(() => {
+        closeEditModal();
+        fetchAndRenderItems();
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Eliminar Elemento';
+      }, 1000);
+    } catch (error) {
+      editStatusText.textContent = `Error: ${error.message}`;
+      deleteBtn.disabled = false;
+      deleteBtn.textContent = 'Eliminar Elemento';
+    }
+  }
+
   function setupEditModalListeners() {
     const tableBody = document.getElementById('carousel-table-body');
 
-    // 1. Listener en la tabla (Delegación de eventos)
     tableBody.addEventListener('click', (e) => {
-      // Si el clic fue en un botón con clase 'edit-btn'
-      if (e.target.classList.contains('edit-btn')) {
-        // Recuperamos el string JSON del 'data-item'
-        // Remplazamos ' por " para que sea JSON válido
-        const itemJson = e.target.dataset.item.replace(/'/g, '"');
-        const item = JSON.parse(itemJson);
-        openEditModal(item);
+      const btn = e.target.closest('.edit-btn');
+      if (btn) {
+        const itemJson = decodeURIComponent(btn.dataset.item);
+        openEditModal(JSON.parse(itemJson));
       }
     });
 
-    // 2. Listeners del modal
     cancelBtn.addEventListener('click', closeEditModal);
     editForm.addEventListener('submit', handleEditSubmit);
+    deleteBtn.addEventListener('click', handleDelete);
   }
 
-  // --- INICIALIZACIÓN ---
-  // (Quitamos el 'DOMContentLoaded' porque 'client:load' se encarga)
-  
   fetchAndRenderItems();
   setupUploadForm();
   setupEditModalListeners();
-
 </script>

@@ -1,15 +1,12 @@
 ---
 // --- BLOQUE 1: FRONTMATTER (Servidor) ---
-
-// 1. Importamos el componente "hijo" que vamos a mostrar.
 import SshPanel from './ConsolaSSH.astro';
-import SubirArchivos from './CarruselAdmin.astro';
+import CarruselAdmin from './CarruselAdmin.astro';
 import UserAdmin from './UserAdmin.astro';
+import NewsAdmin from './NewsAdmin.astro';
 ---
 
-<div 
-  class="panel-container w-full h-[90vh] text-gray-200 rounded-lg overflow-hidden" 
->
+<div class="panel-container w-full h-[90vh] text-gray-200 rounded-lg overflow-hidden caret-transparent">
   
   <div id="view-menu" class="p-8 h-full" style="display: block;">
     <h2 class="text-3xl font-bold mb-8 text-light">
@@ -49,6 +46,14 @@ import UserAdmin from './UserAdmin.astro';
         <p class="text-gray-400">Próxima herramienta para la administración del foro.</p>
       </button>
 
+      <button 
+        class="show-tool-btn p-8 rounded-lg text-left transition-all duration-200 hover:bg-gray-900 hover:border-[#64ffd6] border border-white hover:shadow-xl shadow-[#00ffbb]/25" 
+        data-tool="tool-5" 
+      >
+        <h3 class="text-xl font-semibold text-light mb-2">Modificar Publicaciones</h3>
+        <p class="text-gray-400">Accede a la pagina para modificar las publicaciones.</p>
+      </button>
+
     </div>
   </div>
   
@@ -73,7 +78,7 @@ import UserAdmin from './UserAdmin.astro';
       </div>
 
       <div id="tool-2" class="tool-wrapper h-full" style="display: none;">
-        <SubirArchivos/>
+        <CarruselAdmin/>
       </div>
 
       <div id="tool-3" class="tool-wrapper h-full" style="display: none;">
@@ -81,7 +86,11 @@ import UserAdmin from './UserAdmin.astro';
       </div>
 
       <div id="tool-4" class="tool-wrapper h-full" style="display: none;">
-        <SshPanel/>
+        <div class="p-10 text-center">Próximamente: Panel de Foro</div>
+      </div>
+
+      <div id="tool-5" class="tool-wrapper h-full" style="display: none;">
+        <NewsAdmin/>
       </div>
       
     </main>
@@ -89,50 +98,35 @@ import UserAdmin from './UserAdmin.astro';
 </div>
 
 <script>
-  // Seleccionamos los elementos principales
   const menuView = document.getElementById('view-menu');
   const toolView = document.getElementById('view-tool');
   const backButton = document.getElementById('back-to-menu-btn');
-  
-  // Seleccionamos TODOS los botones que abren herramientas
   const toolButtons = document.querySelectorAll('.show-tool-btn');
-  
-  // Seleccionamos TODOS los contenedores de herramientas
   const toolWrappers = document.querySelectorAll('.tool-wrapper');
 
-  /** Muestra el menú principal y oculta la vista de herramienta */
   function showMenu() {
     menuView.style.display = 'block';
     toolView.style.display = 'none';
   }
 
-  /** Muestra la herramienta (dado su ID) y oculta el menú */
   function showTool(toolId) {
-    // 1. Ocultar el menú, mostrar el contenedor de la herramienta
     menuView.style.display = 'none';
     toolView.style.display = 'block';
     
-    // 2. Ocultar TODOS los wrappers de herramientas
     toolWrappers.forEach(wrapper => {
       (wrapper as HTMLElement).style.display = 'none';
     });
     
-    // 3. Mostrar SÓLO el wrapper de la herramienta seleccionada
     const targetWrapper = document.getElementById(toolId);
     if (targetWrapper) {
       targetWrapper.style.display = 'block';
     }
   }
 
-  // --- ASIGNACIÓN DE EVENTOS ---
-
-  // 1. Asignar evento al botón "Volver"
   backButton.addEventListener('click', showMenu);
   
-  // 2. Asignar evento a CADA botón del menú
   toolButtons.forEach(button => {
     button.addEventListener('click', (event) => {
-      // Obtenemos el ID de la herramienta desde 'data-tool'
       const toolId = (event.currentTarget as HTMLElement).dataset.tool;
       if (toolId) {
         showTool(toolId);
