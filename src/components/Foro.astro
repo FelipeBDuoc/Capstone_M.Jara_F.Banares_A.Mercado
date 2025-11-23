@@ -1,143 +1,113 @@
 ---
-// src/components/Foro.astro
 
-// --- SIMULACIÓN EXTENDIDA DE DATOS ---
-const users = [
-  { id: 1, username: "SirWilinston", bio: "Desarrollador y entusiasta de Astro." },
-  { id: 2, username: "AstroFan", bio: "Explorando el cosmos de la web." },
-  { id: 3, username: "CodeLuna", bio: "Frontend dev amante de la accesibilidad." },
-  { id: 4, username: "DevNova", bio: "Diseñador y programador full-stack." },
-  { id: 5, username: "PixelOrbit", bio: "Fanático de los UI components." }
-];
+const { user, posts } = Astro.props;
 
-const posts = [
-  { id: 101, title: "¿Cuál es su característica favorita de Astro?", category: "Discusión General", content: "Personalmente, me encantan las Astro Islands. La capacidad de enviar cero JavaScript por defecto es revolucionaria. ¿Qué opinan ustedes?", authorId: 1, views: 324 },
-  { id: 102, title: "Proyecto con TailwindCSS y Astro", category: "Proyectos", content: "Estoy empezando un nuevo proyecto y la combinación de Astro con Tailwind es increíblemente rápida para prototipar. ¿Alguien más lo usa?", authorId: 2, views: 278 },
-  { id: 103, title: "Manejo de estado en Astro", category: "Ayuda y Soporte", content: "He estado investigando sobre cómo manejar el estado global. ¿Qué herramientas (Nanostores, SolidJS stores, etc.) recomiendan para un proyecto mediano?", authorId: 1, views: 512 },
-  { id: 104, title: "Integración con CMS Headless", category: "Integraciones", content: "Estoy probando Sanity y Contentful con Astro. ¿Cuál creen que tiene mejor rendimiento y flexibilidad?", authorId: 3, views: 231 },
-  { id: 105, title: "Nuevo tema oscuro para mi blog Astro", category: "Diseño", content: "Acabo de implementar un modo oscuro personalizado usando CSS variables. Si quieren les comparto el snippet.", authorId: 5, views: 417 }
-];
+// Transformar posts igual que antes
+const allPostsData = posts.map((post) => ({
+  id: post.id,
+  title: post.title,
+  content: post.content,
+  category: post.category ?? "General",
+  views: post.views ?? 0,
+  author: post.author,
+  commentCount: post.comments.length,
+  comments: post.comments,
+  groupedReactions: post.reactions.reduce((acc, r) => {
+    acc[r.type] = (acc[r.type] || 0) + 1;
+    return acc;
+  }, {})
+}));
 
-const comments = [
-  { id: 201, content: "Totalmente de acuerdo, ¡las islas son geniales!", authorId: 2, postId: 101 },
-  { id: 202, content: "¡Sí! Lo uso en todos mis proyectos. La purga de CSS automática es una maravilla.", authorId: 1, postId: 102 },
-  { id: 203, content: "He probado Nanostores y es súper ligero y fácil de integrar.", authorId: 2, postId: 103 },
-  { id: 204, content: "¡Buena pregunta! También estoy interesado en esto.", authorId: 2, postId: 101 },
-  { id: 205, content: "Prefiero Contentful, su API GraphQL es más flexible.", authorId: 4, postId: 104 },
-  { id: 206, content: "El diseño oscuro se ve genial, muy limpio.", authorId: 3, postId: 105 },
-  { id: 207, content: "Sanity tiene un panel más intuitivo, aunque Contentful es más robusto.", authorId: 1, postId: 104 },
-  { id: 208, content: "¿Podrías compartir el código del tema oscuro?", authorId: 2, postId: 105 }
-];
+const userPostsData = allPostsData.filter(
+  (p) => p.author.username === user.username
+);
 
-const reactions = [
-  { id: 301, type: '👍', userId: 2, postId: 101 },
-  { id: 302, type: '🚀', userId: 1, postId: 101 },
-  { id: 303, type: '❤️', userId: 1, postId: 102 },
-  { id: 304, type: '👍', userId: 2, postId: 103 },
-  { id: 305, type: '🤔', userId: 1, postId: 103 },
-  { id: 306, type: '🔥', userId: 5, postId: 105 },
-  { id: 307, type: '💡', userId: 3, postId: 104 },
-  { id: 308, type: '👍', userId: 4, postId: 105 },
-  { id: 309, type: '❤️', userId: 2, postId: 104 }
-];
-
-// --- PROCESAMIENTO DE DATOS ---
-const currentUser = users.find(u => u.username === "SirWilinston");
-
-const enrichPosts = (postList) => {
-  return postList.map(post => {
-    const author = users.find(u => u.id === post.authorId);
-    const enrichedComments = comments
-      .filter(c => c.postId === post.id)
-      .map(comment => ({
-        ...comment,
-        author: users.find(u => u.id === comment.authorId)
-      }));
-    const postReactions = reactions.filter(r => r.postId === post.id);
-    const groupedReactions = postReactions.reduce((acc, reaction) => {
-      acc[reaction.type] = (acc[reaction.type] || 0) + 1;
-      return acc;
-    }, {});
-    return {
-      ...post,
-      author,
-      commentCount: enrichedComments.length,
-      groupedReactions,
-      comments: enrichedComments
-    };
-  });
-};
-
-const allPostsData = enrichPosts(posts);
-const userPostsData = enrichPosts(posts.filter(p => p.authorId === currentUser.id));
-const userCommentsData = comments
-  .filter(c => c.authorId === currentUser.id)
-  .map(comment => ({
-    ...comment,
-    post: posts.find(p => p.id === comment.postId)
+const userCommentsData = posts
+  .flatMap(p => p.comments)
+  .filter(c => c.author.username === user.username)
+  .map(c => ({
+    ...c,
+    post: posts.find(p => p.id === c.postId)
   }));
 
 const trendingPosts = allPostsData
   .sort((a, b) => b.views - a.views)
   .slice(0, 3);
+
 ---
 
-<main class="flex flex-col md:flex-row gap-6 p-4 md:p-8 bg-gray-900 text-white min-h-screen">
+<main class="flex flex-col md:flex-row gap-6 p-4 md:p-8 text-white min-h-screen">
+  
   <!-- Perfil -->
+
   <aside class="w-full md:w-1/5 flex-shrink-0">
-    <div class="bg-gray-800 p-6 rounded-lg sticky top-8">
-      <h2 class="text-2xl font-bold mb-2">{currentUser.username}</h2>
-      <p class="text-gray-400 mb-4">{currentUser.bio}</p>
+
+    <!-- Botón para crear nuevo post -->
+     
+    <div class="flex justify-end">
+      <a
+        href="/crear-post"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow"
+      >
+        ➕ Crear nuevo post
+      </a>
+    </div>
+
+    <div class="bg-gray-900 p-6 rounded-lg sticky top-8">
+      <h2 class="text-2xl font-bold mb-2">{user.username}</h2>
+      <p class="text-gray-400 mb-4">{user.bio}</p>
       <p class="text-sm text-gray-500 italic">Miembro desde 2023</p>
     </div>
   </aside>
 
   <!-- Contenido principal -->
   <section id="content-container" class="w-full md:w-3/5 space-y-6">
-    {allPostsData.map(post => (
-      <article
-        data-post-id={post.id}
-        class="bg-gray-800 rounded-lg p-6 border border-gray-700 cursor-pointer transition-all duration-200 hover:border-blue-500 hover:shadow-lg"
-      >
-        <div class="flex items-center justify-between mb-2">
-          <h3 class="text-2xl font-bold text-blue-400">{post.title}</h3>
-          <span class="bg-blue-700 text-xs uppercase px-3 py-1 rounded-full">{post.category}</span>
+
+  {allPostsData.map(post => (
+    <article
+      data-post-id={post.id}
+      class="bg-gray-900 rounded-lg p-6 border border-gray-900 cursor-pointer transition-all duration-200 hover:border-[#64ffd6] hover:shadow-lg"
+    >
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-2xl font-bold text-blue-400">{post.title}</h3>
+        <span class="bg-blue-700 text-xs uppercase px-3 py-1 rounded-full">{post.category}</span>
+      </div>
+      <p class="text-sm text-gray-500 mb-4">
+        Publicado por {post.author.username} · {post.views} vistas
+      </p>
+      <p class="text-gray-300 whitespace-pre-line">{post.content}</p>
+      <div class="mt-4 flex items-center gap-4 text-gray-400">
+        <div class="flex items-center gap-2">
+          <span>💬</span><span>{post.commentCount} comentarios</span>
         </div>
-        <p class="text-sm text-gray-500 mb-4">
-          Publicado por {post.author.username} · {post.views} vistas
-        </p>
-        <p class="text-gray-300 whitespace-pre-line">{post.content}</p>
-        <div class="mt-4 flex items-center gap-4 text-gray-400">
-          <div class="flex items-center gap-2">
-            <span>💬</span><span>{post.commentCount} comentarios</span>
-          </div>
-          <div class="flex items-center gap-3">
-            {Object.entries(post.groupedReactions).map(([emoji, count]) => (
-              <div class="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded-full text-sm">
-                <span>{emoji}</span><span>{count}</span>
-              </div>
-            ))}
-          </div>
+        <div class="flex items-center gap-3">
+          {Object.entries(post.groupedReactions).map(([emoji, count]) => (
+            <div class="flex items-center gap-1 bg-gray-700 px-2 py-1 rounded-full text-sm">
+              <span>{emoji}</span><span>{count}</span>
+            </div>
+          ))}
         </div>
-      </article>
-    ))}
-  </section>
+      </div>
+    </article>
+  ))}
+</section>
+
 
   <!-- Filtros y tendencias -->
   <aside class="w-full md:w-1/5 flex-shrink-0">
-    <div class="bg-gray-800 p-6 rounded-lg sticky top-8 space-y-6">
+    <div class="bg-gray-900 p-6 rounded-lg sticky top-8 space-y-6">
       <div>
-        <h2 class="text-xl font-semibold border-b border-gray-700 pb-2">Filtros</h2>
-        <button id="show-all-btn" class="w-full text-left bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-3">Todas las publicaciones</button>
-        <button id="show-posts-btn" class="w-full text-left bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Mis publicaciones</button>
-        <button id="show-comments-btn" class="w-full text-left bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">Mis comentarios</button>
+        <h2 class="text-xl font-semibold border-b border-gray-900 pb-2">Filtros</h2>
+        <button id="show-all-btn" class="w-full text-left bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-t mt-3">Todas las publicaciones</button>
+        <button id="show-posts-btn" class="w-full text-left bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4">Mis publicaciones</button>
+        <button id="show-comments-btn" class="w-full text-left bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-b">Mis comentarios</button>
       </div>
 
       <div>
-        <h3 class="text-xl font-semibold border-b border-gray-700 pb-2">Tendencias</h3>
+        <h3 class="text-xl font-semibold border-b border-gray-800 pb-2">Tendencias</h3>
         <ul class="mt-3 space-y-3">
           {trendingPosts.map(post => (
-            <li class="bg-gray-700 hover:bg-gray-600 transition rounded-lg p-3">
+            <li class="bg-gray-800 hover:bg-gray-700 transition rounded-lg p-3">
               <p class="text-blue-400 font-semibold text-sm">{post.title}</p>
               <p class="text-gray-400 text-xs">{post.views} vistas · {post.commentCount} comentarios</p>
             </li>
@@ -153,6 +123,9 @@ const trendingPosts = allPostsData
   const showAllBtn = document.getElementById('show-all-btn');
   const showPostsBtn = document.getElementById('show-posts-btn');
   const showCommentsBtn = document.getElementById('show-comments-btn');
+
+  // 🔥 LO QUE SIGUE SE MANTIENE (renderizado del frontend)
+  // no cambié nada excepto que ahora usa datos reales
 
   const renderPosts = (posts) => {
     if (posts.length === 0) {

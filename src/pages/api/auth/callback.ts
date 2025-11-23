@@ -58,7 +58,7 @@ export async function GET(context: APIContext) {
 
     const tokenData = await tokenResponse.json();
     if (tokenData.error) throw new Error(tokenData.error_description);
-    
+
     const accessToken = tokenData.access_token;
 
     // --- 4. OBTENER USUARIO ---
@@ -66,6 +66,8 @@ export async function GET(context: APIContext) {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const userData: DiscordUser = await userResponse.json();
+
+    console.log("Usuario recibido de Discord:", userData); // Verifica los datos del usuario
 
     // --- 5. VERIFICAR ROLES (Lógica del Bot) ---
     const BOT_TOKEN = import.meta.env.DISCORD_BOT_TOKEN;
@@ -86,40 +88,39 @@ export async function GET(context: APIContext) {
       }
     }
 
-    // Definimos el string del rol para la base de datos
-    // Si es admin en discord -> "admin", si no -> "usuario" (o lo que prefieras)
     const dbRole = esAdmin ? "admin" : "usuario";
 
-    // --- 6. REGISTRAR O ACTUALIZAR EN BASE DE DATOS (NUEVO) ---
+    // --- 6. REGISTRAR O ACTUALIZAR EN BASE DE DATOS ---
     try {
-      // Usamos upsert: Si existe actualiza, si no existe crea.
-      await prisma.user.upsert({
+      const upsertResult = await prisma.user.upsert({
         where: { 
-          username: userData.username // Buscamos por username (debe ser @unique en schema)
+          discordId: userData.id // Buscamos por discordId, que es único
         },
         update: {
-          connected: true,      // Marcamos como conectado
-          role: dbRole,         // Actualizamos rol por si cambió en Discord
-          // Opcional: actualizar avatar si lo guardas en DB
+          username: userData.username,  // Actualizamos el username
+          connected: true,               // Marcamos como conectado
+          role: dbRole,                  // Actualizamos el rol
         },
         create: {
-          username: userData.username,
-          role: dbRole,
-          connected: true,
+          discordId: userData.id,       // Guardamos el discordId
+          username: userData.username,  // Guardamos el username
+          role: dbRole,                 // Asignamos el rol
+          connected: true,              // Marcamos como conectado
         },
       });
+
+      console.log("Resultado de upsert:", upsertResult); // Log del resultado de upsert
     } catch (dbError) {
-      console.error("Error guardando en base de datos:", dbError);
-      // Decisión: ¿Quieres detener el login si falla la DB? 
-      // Por ahora solo lo logueamos y dejamos pasar al usuario con la cookie.
+      console.error("Error al guardar en la base de datos:", dbError); // Log del error específico de DB
+      return new Response("Error en la base de datos", { status: 500 });
     }
 
     // --- 7. COOKIE Y REDIRECCIÓN ---
     const userToSave: UserSession = {
       id: userData.id,
       username: userData.username,
-      avatar: userData.avatar 
-        ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` 
+      avatar: userData.avatar
+        ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` // Usamos el avatar solo en la cookie
         : null,
       esAdmin: esAdmin,
     };
@@ -128,13 +129,13 @@ export async function GET(context: APIContext) {
       httpOnly: true,
       secure: import.meta.env.PROD,
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7,  // La cookie expirará en 7 días
     });
 
     return redirect("/", 302);
 
   } catch (error) {
-    console.error("Error en auth:", error);
-    return new Response("Error interno de autenticación", { status: 500 });
+    console.error("Error interno en autenticación:", error); // Log completo del error
+    return new Response(`Error interno de autenticación: ${error.message}`, { status: 500 });
   }
 }

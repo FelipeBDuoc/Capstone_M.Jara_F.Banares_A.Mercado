@@ -53,7 +53,7 @@ const isAdmin = user ? user.esAdmin : false;
                 <div class="flex space-x-4">
                     <a href="/foro" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Foro</a>
                     <a href="https://b0tk.github.io/dj-web/" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Bots</a>
-                    <a href="#" class="rounded-md px-16 py-8 text-sm font-medium text-white hover:bg-gray-700 hover:text-white">Proyectos</a>
+                  
                 </div>
             </div>
           </div>
@@ -112,8 +112,6 @@ const isAdmin = user ? user.esAdmin : false;
                     {
                       isLoggedIn && user ? (
                         <>
-                          <a href="/profile" class="block px-4 py-2 text-sm text-white">Tu perfil ({user.username})</a>
-                          
                           {isAdmin && (
                             <a href="/admin" class="block px-4 py-2 text-sm text-[#64ffd6]">Administración</a>
                           )}
