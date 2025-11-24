@@ -1,19 +1,21 @@
 ---
-
 import { getCarouselItems } from '../pages/api/carousel.ts';
 const items = await getCarouselItems();
-
 ---
 
-<!-- Carousel -->
-
-<div class="w-full max-w-6xl mx-auto p-6">
-  <div class="relative border border-[#64ffd6] shadow-xl shadow-[#00ffbb]/25 overflow-hidden rounded-lg">
-    <div id="carousel-track" class="flex transition-transform duration-300 ease-in-out w-full">
+<div class="w-full max-w-6xl mx-auto p-6 caret-transparent">
+  <div class="relative border border-[#64ffd6] shadow-xl shadow-[#00ffbb]/25 overflow-hidden rounded-lg group pb-2.5">
+    
+    <div id="carousel-track" class="flex transition-transform duration-500 ease-out w-full">
       {items.map((item) => (
-        <div class="w-full flex-shrink-0 flex items-center gap-4 p-6">
-          <img src={item.imageUrl} class="w-1/2 object-cover h-full rounded-md" />
-          <div class="w-1/2">
+        /* CAMBIOS AQUÍ:
+           1. Agregué 'h-96': Define la altura fija del carrusel (puedes cambiar 96 por 80 o [500px] si lo quieres más alto).
+        */
+        <div class="w-full flex-shrink-0 flex items-center gap-4 p-6 carousel-slide h-142">
+          
+          <img src={item.imageUrl} alt={item.title} class="w-1/2 object-cover h-full rounded-md shadow-md" />
+          
+          <div class="w-1/2 h-full flex flex-col justify-center">
             <h2 class="text-2xl text-[#00ffbb] font-bold mb-2">{item.title}</h2>
             <p class="text-white">{item.description}</p>
           </div>
@@ -21,28 +23,37 @@ const items = await getCarouselItems();
       ))}
     </div>
 
-    <!-- Botones -->
     <button
       id="prev-btn"
-      class="absolute left-4 top-1/2 -translate-y-1/2 bg-[#00ffbb] hover:bg-white text-white hover:text-black rounded-full p-2 shadow"
-      aria-label="Previous slide"
+      class="absolute left-4 top-1/2 -translate-y-1/2 bg-[#00ffbb]/80 hover:bg-[#00ffbb] text-black p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-20"
+      aria-label="Anterior diapositiva"
     >
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
       </svg>
     </button>
+
     <button
       id="next-btn"
-      class="absolute right-4 top-1/2 -translate-y-1/2 bg-[#00ffbb] hover:bg-white text-white hover:text-black rounded-full p-2 shadow"
-      aria-label="Next slide"
+      class="absolute right-4 top-1/2 -translate-y-1/2 bg-[#00ffbb]/80 hover:bg-[#00ffbb] text-black p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 z-20"
+      aria-label="Siguiente diapositiva"
     >
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
       </svg>
     </button>
+
+    <div class="absolute bottom-3 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+      {items.map((_, index) => (
+        <button
+          class="carousel-dot w-2.5 h-2.5 rounded-full transition-all duration-300 bg-white opacity-50 hover:opacity-100"
+          aria-label={`Ir a la diapositiva ${index + 1}`}
+          data-index={index}
+        ></button>
+      ))}
+    </div>
+
   </div>
 </div>
-
-<!-- Script carousel -->
 
 <script src="../assets/scripts/slider.js"></script>

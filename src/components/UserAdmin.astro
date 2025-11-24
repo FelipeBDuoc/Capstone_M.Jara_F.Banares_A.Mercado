@@ -1,328 +1,290 @@
 ---
+// UserAdmin.astro
 ---
 
-<div class="w-full text-gray-200 p-12 caret-transparent">
+<div class="w-full text-gray-200 p-12 caret-transparent font-sans">
   
-  <div class="flex justify-between items-center mb-4 gap-4">
-    
+  <div class="flex justify-between items-center mb-6 gap-4">
     <button
       id="save-changes-btn"
-      class="px-4 py-2 font-semibold text-white bg-green-200 rounded-md transition-all
-             disabled:bg-gray-500 disabled:cursor-not-allowed"
+      class="px-5 py-2 text-sm font-bold text-white bg-green-600/80 border border-green-500 rounded shadow-[0_0_15px_rgba(74,222,128,0.3)] transition-all hover:bg-green-500 hover:shadow-[0_0_20px_rgba(74,222,128,0.5)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed disabled:bg-gray-700 disabled:border-gray-600"
       disabled
     >
-      Guardar Cambios
+      GUARDAR CAMBIOS
     </button>
     
-    <input 
-      type="search"
-      id="user-search-input"
-      placeholder="Buscar por nombre de usuario..."
-      class="w-full max-w-xs px-4 py-2 bg-dark-accent border border-dark-highlight rounded-md text-gray-200 placeholder-gray-400"
-    />
+    <div class="relative w-full max-w-xs">
+      <input 
+        type="search"
+        id="user-search-input"
+        placeholder="Buscar usuario o Discord ID..."
+        class="w-full px-4 py-2 bg-[#111] border border-[#64ffd6] rounded text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#64ffd6] focus:shadow-[0_0_10px_#64ffd6]"
+      />
+    </div>
   </div>
 
-  <div class="rounded-lg border border-[#64ffd6] shadow-lg shadow-[#00ffbb]/25 overflow-hidden">
-    <table class="w-full min-w-full divide-y divide-[#64ffd6]">
-      <thead class="bg-dark-secondary">
+  <div class="rounded-lg border border-[#64ffd6] shadow-lg shadow-[#00ffbb]/20 overflow-hidden bg-[#1e2124]">
+    <table class="w-full min-w-full divide-y divide-[#64ffd6]/30">
+      <thead class="bg-[#111]">
         <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Usuario</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Email</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Discord ID</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-light uppercase tracking-wider">Rol</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Usuario</th>
+          <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Posts</th>
+          <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Comentarios</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Discord ID</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Rol</th>
+          <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Conectado</th>
         </tr>
       </thead>
-      <tbody id="user-table-body" class="divide-y divide-[#64ffd6]">
-        </tbody>
+      <tbody id="user-table-body" class="divide-y divide-gray-700/50 bg-[#1e2124]">
+        <tr>
+          <td colspan="6" class="px-6 py-10 text-center text-gray-500 italic">Cargando usuarios del sistema...</td>
+        </tr>
+      </tbody>
     </table>
   </div>
   
-  <p id="user-list-status" class="text-gray-400 mt-4"></p>
-
-  <div class="flex justify-between items-center mt-4">
-    <button
-      id="prev-page-btn"
-      class="px-4 py-2 font-medium bg-dark-accent border border-dark-highlight rounded-md transition-all hover:bg-dark-highlight
-             disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      Anterior
-    </button>
-    
-    <span id="page-info" class="text-sm text-gray-400">
-      Página 1 de 1
-    </span>
-    
-    <button
-      id="next-page-btn"
-      class="px-4 py-2 font-medium bg-dark-accent border border-dark-highlight rounded-md transition-all hover:bg-dark-highlight
-             disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      Siguiente
-    </button>
+  <div class="flex justify-between items-center mt-6 px-2">
+      <span id="page-info" class="text-xs text-[#64ffd6] font-mono">Cargando...</span>
+      <div class="flex gap-3">
+          <button id="prev-page-btn" class="px-4 py-1 text-xs font-bold border border-[#64ffd6] text-[#64ffd6] rounded hover:bg-[#64ffd6] hover:text-black transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#64ffd6]">ANTERIOR</button>
+          <button id="next-page-btn" class="px-4 py-1 text-xs font-bold border border-[#64ffd6] text-[#64ffd6] rounded hover:bg-[#64ffd6] hover:text-black transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#64ffd6]">SIGUIENTE</button>
+      </div>
   </div>
 </div>
 
-
 <script>
-  // --- CONFIGURACIÓN Y ESTADO GLOBAL ---
-  const ROLES = ['user', 'mod', 'admin'];
-  const USERS_PER_PAGE = 10;
+// ========== CONFIGURACIÓN ==========
+let allUsers = [];
+let filteredUsers = [];
+let currentPage = 1;
+const USERS_PER_PAGE = 10;
+let pendingChanges = new Map(); // Almacena cambios de rol: { userId: newRole }
 
-  let allUsers = [];        // Todos los usuarios de la DB
-  let filteredUsers = [];   // Usuarios después de aplicar el buscador
-  let pendingChanges = {};  // Cambios pendientes (ej: { "123": "admin" })
-  let currentPage = 1;
+// Referencias UI
+const ui = {
+  tableBody: document.getElementById('user-table-body'),
+  searchInput: document.getElementById('user-search-input'),
+  saveButton: document.getElementById('save-changes-btn'),
+  pageInfo: document.getElementById('page-info'),
+  prevBtn: document.getElementById('prev-page-btn'),
+  nextBtn: document.getElementById('next-page-btn')
+};
 
-  // Objeto para guardar las referencias a los elementos del DOM
-  const ui = {};
+// ========== LÓGICA DE DATOS ==========
 
-  // --- 1. FUNCIONES DE RENDERIZADO Y LÓGICA ---
-
-  /**
-   * Crea el HTML para un <select> de roles
-   */
-  function createRoleSelector(userId, currentRole) {
-    const optionsHtml = ROLES.map(role => 
-      `<option value="${role}" ${role === currentRole ? 'selected' : ''}>${role}</option>`
-    ).join('');
+/**
+ * Obtiene los usuarios desde la API /api/users
+ */
+async function fetchUsers() {
+  try {
+    const response = await fetch('/api/users');
+    if (!response.ok) throw new Error("Error al conectar con API");
     
-    return `
-      <select 
-        data-user-id="${userId}" 
-        class="role-selector bg-[#1e2124] border border-dark-highlight text-gray-200 rounded-md p-2"
-      >
-        ${optionsHtml}
-      </select>
-    `;
-  }
-
-  /**
-   * Renderiza la tabla con los usuarios de la página actual
-   */
-  function renderTable() {
-    if (!ui.tableBody) return;
-
-    // Calcular qué usuarios mostrar
-    const startIndex = (currentPage - 1) * USERS_PER_PAGE;
-    const endIndex = startIndex + USERS_PER_PAGE;
-    const usersToRender = filteredUsers.slice(startIndex, endIndex);
-
-    // Limpiar tabla
-    ui.tableBody.innerHTML = '';
-
-    if (usersToRender.length === 0) {
-      ui.tableBody.innerHTML = `
-        <tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">
-          No se encontraron usuarios.
-        </td></tr>
-      `;
-      return;
-    }
-
-    // Renderizar cada fila
-    usersToRender.forEach(user => {
-      // ¿Este usuario tiene un cambio pendiente?
-      const displayRole = pendingChanges[user.id] || user.role;
-      
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap"><div class="font-medium">${user.username || 'N/A'}</div></td>
-        <td class="px-6 py-4 whitespace-nowrap">${user.email || 'N/A'}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-gray-400">${user.discordId || 'N/A'}</td>
-        <td class="px-6 py-4 whitespace-nowrap">
-          ${createRoleSelector(user.id, displayRole)}
-        </td>
-      `;
-      ui.tableBody.appendChild(row);
-    });
-  }
-
-  /**
-   * Actualiza los controles de paginación (botones y texto)
-   */
-  function renderPagination() {
-    const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE) || 1;
+    const data = await response.json();
     
-    ui.pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-    ui.prevButton.disabled = (currentPage === 1);
-    ui.nextButton.disabled = (currentPage === totalPages);
-  }
-
-  /**
-   * Actualiza el estado (y estilo) del botón "Guardar Cambios"
-   */
-  function updateSaveButtonState() {
-    const changesCount = Object.keys(pendingChanges).length;
-    
-    if (changesCount > 0) {
-      ui.saveButton.disabled = false;
-      ui.saveButton.textContent = `Guardar (${changesCount}) Cambios`;
-    } else {
-      ui.saveButton.disabled = true;
-      ui.saveButton.textContent = 'Guardar Cambios';
-    }
-  }
-
-  /**
-   * Aplica el filtro de búsqueda y actualiza la vista
-   */
-  function applyFilters() {
-    const searchTerm = ui.searchInput.value.toLowerCase();
-    
-    filteredUsers = allUsers.filter(user => 
-      (user.username || '').toLowerCase().includes(searchTerm)
-    );
-    
-    currentPage = 1; // Volver a la página 1
-    renderTable();
-    renderPagination();
-  }
-
-
-  // --- 2. FUNCIONES DE MANEJO DE DATOS (API) ---
-
-  /**
-   * Busca todos los usuarios de la API y los guarda en el estado
-   */
-  async function fetchUsers() {
-    try {
-      ui.statusMessage.textContent = 'Cargando usuarios...';
-      const response = await fetch('/api/users');
-      if (!response.ok) throw new Error('Error de red');
-      
-      allUsers = await response.json();
-      filteredUsers = [...allUsers]; // Copiar la lista
-      
-      ui.statusMessage.textContent = '';
-      renderTable();
-      renderPagination();
-      
-    } catch (error) {
-      console.error('Error al cargar usuarios:', error);
-      ui.statusMessage.textContent = 'Error al cargar la lista de usuarios.';
-    }
-  }
-
-  /**
-   * Envía los cambios pendientes a la API (PATCH)
-   */
-  async function saveChanges() {
-    const changesCount = Object.keys(pendingChanges).length;
-    if (changesCount === 0) return;
-
-    // Convertir el objeto { "1": "admin" } a un array [{ userId: "1", newRole: "admin" }]
-    const changesToSave = Object.keys(pendingChanges).map(userId => ({
-      userId: userId, // Lo enviamos como string, la API hace el parseInt
-      newRole: pendingChanges[userId]
+    // Mapeo seguro de datos
+    allUsers = data.map(u => ({
+      id: u.id,
+      username: u.username || "Desconocido",
+      posts: u.posts || 0,
+      comments: u.comments || 0,
+      discordId: u.discordId || "N/A",
+      role: u.role || "user",
+      isOnline: u.connected === true
     }));
 
-    ui.saveButton.disabled = true;
-    ui.saveButton.textContent = 'Guardando...';
+    filteredUsers = [...allUsers];
+    renderTable();
 
-    try {
-      const response = await fetch('/api/users', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(changesToSave)
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Error en el servidor');
-      }
-
-      // Éxito: limpiar cambios pendientes y recargar todo
-      pendingChanges = {};
-      await fetchUsers(); // Recargamos la lista desde la DB
-      updateSaveButtonState(); // Esto reseteará el botón
-      alert('¡Cambios guardados con éxito!');
-
-    } catch (error) {
-      console.error('Error al guardar cambios:', error);
-      alert(`Error al guardar: ${error.message}`);
-      // No reseteamos los cambios pendientes, el usuario puede reintentar
-      updateSaveButtonState(); // Re-habilitar el botón
+  } catch (error) {
+    console.error(error);
+    if(ui.tableBody) {
+        ui.tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-red-400">Error al cargar datos: ${error.message}</td></tr>`;
     }
   }
+}
 
+/**
+ * Envía los cambios de rol al servidor
+ */
+async function saveChanges() {
+  if (pendingChanges.size === 0) return;
 
-  // --- 3. MANEJADORES DE EVENTOS (HANDLERS) ---
+  ui.saveButton.textContent = "GUARDANDO...";
+  ui.saveButton.disabled = true;
 
-  function handleRoleChange(event) {
-    const target = event.target;
-    // Nos aseguramos que el evento venga de un <select>
-    if (target.tagName !== 'SELECT' || !target.classList.contains('role-selector')) {
-      return;
-    }
+  const payload = Array.from(pendingChanges.entries()).map(([id, role]) => ({
+    userId: id,
+    newRole: role
+  }));
 
-    const userId = target.dataset.userId;
-    const newRole = target.value;
-    
-    // Encontrar el rol original del usuario
-    const originalUser = allUsers.find(u => u.id == userId);
-    if (!originalUser) return;
+  try {
+    const response = await fetch('/api/users', { // Asegúrate que tu endpoint soporte PATCH
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    if (originalUser.role === newRole) {
-      // Si el rol es el mismo que el original, lo quitamos de "pendientes"
-      delete pendingChanges[userId];
+    if (response.ok) {
+      // Éxito
+      alert("Cambios guardados correctamente");
+      pendingChanges.clear();
+      await fetchUsers(); // Recargar datos frescos
     } else {
-      // Si es diferente, lo añadimos
-      pendingChanges[userId] = newRole;
+      throw new Error("Error al guardar");
     }
-    
+  } catch (e) {
+    alert("Hubo un problema al guardar los cambios.");
+    ui.saveButton.disabled = false;
+  } finally {
+    ui.saveButton.textContent = "GUARDAR CAMBIOS";
     updateSaveButtonState();
   }
+}
 
-  function handleSearchInput() {
-    applyFilters();
+// ========== LÓGICA VISUAL ==========
+
+function renderTable() {
+  if (!ui.tableBody) return;
+  ui.tableBody.innerHTML = '';
+
+  if (filteredUsers.length === 0) {
+    ui.tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No se encontraron usuarios.</td></tr>`;
+    updatePaginationUI();
+    return;
   }
 
-  function goToPrevPage() {
-    if (currentPage > 1) {
-      currentPage--;
-      renderTable();
-      renderPagination();
+  const start = (currentPage - 1) * USERS_PER_PAGE;
+  const end = start + USERS_PER_PAGE;
+  const pageData = filteredUsers.slice(start, end);
+
+  pageData.forEach(user => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-[#64ffd6]/5 transition-colors group";
+
+    // 1. Usuario
+    const tdUser = document.createElement('td');
+    tdUser.className = "px-6 py-4 whitespace-nowrap text-sm font-medium text-white group-hover:text-[#64ffd6] transition-colors";
+    tdUser.textContent = user.username;
+
+    // 2. Posts
+    const tdPosts = document.createElement('td');
+    tdPosts.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center font-mono";
+    tdPosts.textContent = user.posts;
+
+    // 3. Comentarios
+    const tdComments = document.createElement('td');
+    tdComments.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center font-mono";
+    tdComments.textContent = user.comments;
+
+    // 4. Discord ID
+    const tdDiscord = document.createElement('td');
+    tdDiscord.className = "px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono tracking-wide";
+    tdDiscord.textContent = user.discordId;
+
+    // 5. Rol (Selector)
+    const tdRole = document.createElement('td');
+    tdRole.className = "px-6 py-4 whitespace-nowrap";
+    
+    const select = document.createElement('select');
+    select.className = "bg-[#0a0a0a] border border-gray-700 text-gray-300 text-xs rounded px-2 py-1 focus:border-[#64ffd6] focus:text-[#64ffd6] outline-none cursor-pointer";
+    
+    // Opciones de rol
+    ['usuario', 'moderator', 'admin', 'soporte'].forEach(r => {
+        const op = document.createElement('option');
+        op.value = r;
+        op.textContent = r.toUpperCase();
+        if (user.role === r) op.selected = true;
+        select.appendChild(op);
+    });
+
+    // Evento cambio de rol
+    select.addEventListener('change', (e) => {
+        const newVal = e.target.value;
+        // Si vuelve al valor original, lo quitamos de pendientes
+        if (newVal === user.role) {
+            pendingChanges.delete(user.id);
+        } else {
+            pendingChanges.set(user.id, newVal);
+        }
+        updateSaveButtonState();
+    });
+    tdRole.appendChild(select);
+
+    // 6. Conectado
+    const tdOnline = document.createElement('td');
+    tdOnline.className = "px-6 py-4 whitespace-nowrap text-center";
+    
+    const dot = document.createElement('div');
+    // Estilo del punto: Verde neon si true, gris oscuro si false
+    dot.className = user.isOnline 
+        ? "w-3 h-3 bg-green-500 rounded-full mx-auto shadow-[0_0_10px_#22c55e] animate-pulse" 
+        : "w-3 h-3 bg-gray-700 rounded-full mx-auto";
+    
+    tdOnline.appendChild(dot);
+
+    tr.append(tdUser, tdPosts, tdComments, tdDiscord, tdRole, tdOnline);
+    ui.tableBody.appendChild(tr);
+  });
+
+  updatePaginationUI();
+}
+
+function updateSaveButtonState() {
+    if (ui.saveButton) {
+        const hasChanges = pendingChanges.size > 0;
+        ui.saveButton.disabled = !hasChanges;
+        ui.saveButton.textContent = hasChanges ? `GUARDAR (${pendingChanges.size})` : "GUARDAR CAMBIOS";
     }
-  }
+}
 
-  function goToNextPage() {
-    const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
-    if (currentPage < totalPages) {
-      currentPage++;
-      renderTable();
-      renderPagination();
+function updatePaginationUI() {
+    const total = filteredUsers.length;
+    const start = (currentPage - 1) * USERS_PER_PAGE + 1;
+    const end = Math.min(start + USERS_PER_PAGE - 1, total);
+    
+    if (ui.pageInfo) {
+        ui.pageInfo.textContent = total > 0 
+            ? `Viendo ${start}-${end} de ${total}` 
+            : '0 resultados';
     }
-  }
+    
+    if (ui.prevBtn) ui.prevBtn.disabled = currentPage === 1;
+    if (ui.nextBtn) ui.nextBtn.disabled = end >= total;
+}
 
-  // --- 4. INICIALIZACIÓN ---
+// ========== EVENT LISTENERS ==========
 
-  /**
-   * Asigna los elementos del DOM y los event listeners
-   */
-  function initialize() {
-    // Asignar elementos a la variable 'ui'
-    ui.tableBody = document.getElementById('user-table-body');
-    ui.statusMessage = document.getElementById('user-list-status');
-    ui.saveButton = document.getElementById('save-changes-btn');
-    ui.searchInput = document.getElementById('user-search-input');
-    ui.prevButton = document.getElementById('prev-page-btn');
-    ui.nextButton = document.getElementById('next-page-btn');
-    ui.pageInfo = document.getElementById('page-info');
+if (ui.searchInput) {
+    ui.searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        filteredUsers = allUsers.filter(u => 
+            u.username.toLowerCase().includes(term) || 
+            String(u.discordId).toLowerCase().includes(term)
+        );
+        currentPage = 1; // Reset a página 1 al buscar
+        renderTable();
+    });
+}
 
-    // Asignar Listeners
-    ui.searchInput.addEventListener('input', handleSearchInput);
+if (ui.prevBtn) {
+    ui.prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; renderTable(); }
+    });
+}
+
+if (ui.nextBtn) {
+    ui.nextBtn.addEventListener('click', () => {
+        const maxPage = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+        if (currentPage < maxPage) { currentPage++; renderTable(); }
+    });
+}
+
+if (ui.saveButton) {
     ui.saveButton.addEventListener('click', saveChanges);
-    ui.prevButton.addEventListener('click', goToPrevPage);
-    ui.nextButton.addEventListener('click', goToNextPage);
-    
-    // Listener de cambio en la tabla (Delegación de eventos)
-    ui.tableBody.addEventListener('change', handleRoleChange);
-    
-    // Cargar los datos iniciales
-    fetchUsers();
-  }
+}
 
-  // Iniciar todo el componente
-  initialize();
+// Iniciar
+fetchUsers();
 
 </script>

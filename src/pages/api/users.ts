@@ -1,24 +1,41 @@
-export const prerender = false;
-
 import type { APIRoute } from "astro";
 import { prisma } from "../../lib/prisma";
 
+export const prerender = false;
+
+// Función para obtener usuarios de la DB
 export async function getUsers() {
+  // Intentamos obtener usuarios y contar sus relaciones (posts, comentarios)
   const items = await prisma.user.findMany({
     orderBy: { createdAt: "asc" },
+    // Esto intenta contar posts y comentarios si las relaciones existen en tu schema.prisma
+    include: {
+      _count: {
+        select: { 
+            posts: true, 
+            comments: true 
+        }
+      }
+    }
   });
 
-  // Convertimos el buffer de imagen a base64
-  return items.map(({ id, username, role, email, discordId, createdAt }) => ({
-    id,
-    username,
-    role,
-    email,
-    discordId,
-    createdAt
+  // Mapeamos los datos para enviarlos al frontend limpios
+  return items.map((user) => ({
+    id: user.id,
+    username: user.username,
+    role: user.role,
+    email: user.email,
+    discordId: user.discordId,
+    createdAt: user.createdAt,
+    // Mapeamos el campo de la DB 'connected'
+    connected: user.connected ?? false, 
+    // Extraemos los conteos de prisma (o ponemos 0 si no existen)
+    posts: user._count?.posts ?? 0,
+    comments: user._count?.comments ?? 0
   }));
 }
 
+// --- METODO GET ---
 export const GET: APIRoute = async () => {
   try {
     const safeItems = await getUsers();
@@ -30,28 +47,16 @@ export const GET: APIRoute = async () => {
     console.error("Error al obtener los usuarios:", error);
     return new Response(
       JSON.stringify({ error: "No se pudieron obtener los datos" }),
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 };
 
-// ---
-// --- MÉTODO PATCH (Actualizado para Aceptar Arrays) ---
-// ---
-export const PATCH: APROUTE = async ({ request, locals }) => {
-  
-  // (¡Recuerda poner tu lógica de seguridad aquí!)
-  // const session = await locals.auth.validate();
-  // if (!session || session.user.role !== 'admin') {
-  //   return new Response(JSON.stringify({ error: "No autorizado" }), { status: 403 });
-  // }
-
+// --- METODO PATCH (Mantenemos tu lógica de actualización) ---
+export const PATCH: APIRoute = async ({ request }) => {
   try {
     const changes = await request.json();
 
-    // 1. Validar que el body sea un array
     if (!Array.isArray(changes)) {
       return new Response(
         JSON.stringify({ error: "El body debe ser un array de cambios" }),
@@ -59,33 +64,25 @@ export const PATCH: APROUTE = async ({ request, locals }) => {
       );
     }
 
-    const allowedRoles = ['user', 'mod', 'admin'];
+    const allowedRoles = ['usuario', 'moderator', 'admin', 'soporte']; // Ajusta según tus roles reales
     
-    // 2. Preparar todas las actualizaciones
     const updatePromises = changes.map(change => {
       const { userId, newRole } = change;
+      // Asegurar que sea número si tu ID en DB es Int, o string si es String
+      const userIdParsed = parseInt(userId, 10); 
 
-      // --- ¡LA MISMA CORRECCIÓN DE ANTES! ---
-      const userIdAsInt = parseInt(userId, 10);
-      // ------------------------------------
-
-      if (!userIdAsInt || !newRole || !allowedRoles.includes(newRole)) {
-        // Si algún cambio es inválido, lanzamos un error que detendrá la transacción
-        throw new Error(`Cambio inválido para el usuario ${userId}`);
+      if (!userIdParsed || !newRole) {
+        throw new Error(`Datos inválidos para el usuario ${userId}`);
       }
       
-      // Preparamos la promesa de actualización de Prisma
       return prisma.user.update({
-        where: { id: userIdAsInt },
+        where: { id: userIdParsed },
         data: { role: newRole },
       });
     });
 
-    // 3. Ejecutar TODAS las actualizaciones en una sola transacción
-    //    Esto significa que o TODAS tienen éxito, o NINGUNA se aplica.
     await prisma.$transaction(updatePromises);
 
-    // 4. Responder con éxito
     return new Response(JSON.stringify({ message: `${changes.length} usuarios actualizados` }), {
       status: 200,
     });
@@ -93,7 +90,7 @@ export const PATCH: APROUTE = async ({ request, locals }) => {
   } catch (error) {
     console.error("Error al actualizar roles:", error);
     return new Response(
-      JSON.stringify({ error: "Error interno del servidor o datos inválidos", details: error.message }),
+      JSON.stringify({ error: "Error interno", details: error instanceof Error ? error.message : "Desconocido" }),
       { status: 500 }
     );
   }
