@@ -27,9 +27,7 @@ export async function getUsers() {
     email: user.email,
     discordId: user.discordId,
     createdAt: user.createdAt,
-    // Mapeamos el campo de la DB 'connected'
     connected: user.connected ?? false, 
-    // Extraemos los conteos de prisma (o ponemos 0 si no existen)
     posts: user._count?.posts ?? 0,
     comments: user._count?.comments ?? 0
   }));

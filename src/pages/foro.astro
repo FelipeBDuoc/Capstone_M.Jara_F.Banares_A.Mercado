@@ -1,31 +1,38 @@
 ---
-
 import Layout from "../layouts/Layout.astro"
 import Header from "../components/Header.astro"
 import Foro from "../components/Foro.astro"
+import { prisma } from "../lib/prisma"; 
 
-// 🔥 Leemos la cookie "session"
 const sessionCookie = Astro.cookies.get("session");
 
 let user = undefined;
 
 if (sessionCookie?.value) {
   try {
-    user = JSON.parse(sessionCookie.value);
+    const sessionData = JSON.parse(sessionCookie.value);
+    
+    if (sessionData.discordId) {
+        user = await prisma.user.findUnique({
+            where: { discordId: sessionData.discordId }
+        });
+    } else if (sessionData.username) {
+         user = await prisma.user.findFirst({
+            where: { username: sessionData.username }
+        });
+    }
+
   } catch (e) {
-    console.error("Cookie de sesión mal formada:", e);
+    console.error("Error recuperando usuario de la BD:", e);
   }
 }
 
-// Si NO hay usuario → redirigir al login
 if (!user) {
   return Astro.redirect("/api/auth/login");
 }
 
-// Obtener posts desde la API
 const res = await fetch("http://localhost:4321/api/posts");
 const posts = await res.json();
-
 ---
 
 <Layout>

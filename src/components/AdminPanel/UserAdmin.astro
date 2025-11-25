@@ -1,0 +1,294 @@
+---
+---
+
+<div class="w-full text-gray-200 p-12 caret-transparent font-sans">
+  
+  <div class="flex justify-between items-center mb-6 gap-4">
+    <button
+      id="save-changes-btn"
+      class="px-5 py-2 text-sm font-bold text-white bg-green-600/80 border border-green-500 rounded shadow-[0_0_15px_rgba(74,222,128,0.3)] transition-all hover:bg-green-500 hover:shadow-[0_0_20px_rgba(74,222,128,0.5)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed disabled:bg-gray-700 disabled:border-gray-600"
+      disabled
+    >
+      GUARDAR CAMBIOS
+    </button>
+    
+    <div class="relative w-full max-w-xs">
+      <input 
+        type="search"
+        id="user-search-input"
+        placeholder="Buscar usuario o Discord ID..."
+        class="w-full px-4 py-2 bg-[#111] border border-[#64ffd6] rounded text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#64ffd6] focus:shadow-[0_0_10px_#64ffd6] caret-[#64ffd6]"
+      />
+    </div>
+  </div>
+
+  <div class="rounded-lg border border-[#64ffd6] shadow-lg shadow-[#00ffbb]/20 overflow-hidden bg-[#1e2124]">
+    <table class="w-full min-w-full divide-y divide-[#64ffd6]/30">
+      <thead class="bg-[#111]">
+        <tr>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Usuario</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Fecha de Registro</th>
+          <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Posts</th>
+          <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Comentarios</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Discord ID</th>
+          <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Rol</th>
+          <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-[#64ffd6] uppercase tracking-widest">Conectado</th>
+        </tr>
+      </thead>
+      <tbody id="user-table-body" class="divide-y divide-gray-700/50 bg-[#1e2124]">
+        <tr>
+          <td colspan="7" class="px-6 py-10 text-center text-gray-500 italic">Cargando usuarios del sistema...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="flex justify-between items-center mt-6 px-2">
+      <span id="page-info" class="text-xs text-[#64ffd6] font-mono">Cargando...</span>
+      <div class="flex gap-3">
+          <button id="prev-page-btn" class="px-4 py-1 text-xs font-bold border border-[#64ffd6] text-[#64ffd6] rounded hover:bg-[#64ffd6] hover:text-black transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#64ffd6]">ANTERIOR</button>
+          <button id="next-page-btn" class="px-4 py-1 text-xs font-bold border border-[#64ffd6] text-[#64ffd6] rounded hover:bg-[#64ffd6] hover:text-black transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#64ffd6]">SIGUIENTE</button>
+      </div>
+  </div>
+</div>
+
+<script>
+// ========== CONFIGURACIÓN ==========
+let allUsers = [];
+let filteredUsers = [];
+let currentPage = 1;
+const USERS_PER_PAGE = 10;
+let pendingChanges = new Map();
+
+// Referencias UI
+const ui = {
+  tableBody: document.getElementById('user-table-body'),
+  searchInput: document.getElementById('user-search-input'),
+  saveButton: document.getElementById('save-changes-btn'),
+  pageInfo: document.getElementById('page-info'),
+  prevBtn: document.getElementById('prev-page-btn'),
+  nextBtn: document.getElementById('next-page-btn')
+};
+
+// ========== LÓGICA DE DATOS ==========
+
+async function fetchUsers() {
+  try {
+    const response = await fetch('/api/users');
+    if (!response.ok) throw new Error("Error al conectar con API");
+    
+    const data = await response.json();
+    
+    allUsers = data.map(u => ({
+      id: u.id,
+      username: u.username || "Desconocido",
+      createdAt: u.createdAt || new Date(), 
+      posts: u.posts || 0,
+      comments: u.comments || 0,
+      discordId: u.discordId || "N/A",
+      role: u.role || "user",
+      isOnline: u.connected === true
+    }));
+
+    filteredUsers = [...allUsers];
+    renderTable();
+
+  } catch (error) {
+    console.error(error);
+    if(ui.tableBody) {
+        ui.tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-red-400">Error al cargar datos: ${error.message}</td></tr>`;
+    }
+  }
+}
+
+async function saveChanges() {
+  if (pendingChanges.size === 0) return;
+
+  ui.saveButton.textContent = "GUARDANDO...";
+  ui.saveButton.disabled = true;
+
+  const payload = Array.from(pendingChanges.entries()).map(([id, role]) => ({
+    userId: id,
+    newRole: role
+  }));
+
+  try {
+    const response = await fetch('/api/users', { 
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      alert("Cambios guardados correctamente");
+      pendingChanges.clear();
+      await fetchUsers(); 
+    } else {
+      throw new Error("Error al guardar");
+    }
+  } catch (e) {
+    alert("Hubo un problema al guardar los cambios.");
+    ui.saveButton.disabled = false;
+  } finally {
+    ui.saveButton.textContent = "GUARDAR CAMBIOS";
+    updateSaveButtonState();
+  }
+}
+
+// ========== LÓGICA VISUAL ==========
+
+function renderTable() {
+  if (!ui.tableBody) return;
+  ui.tableBody.innerHTML = '';
+
+  if (filteredUsers.length === 0) {
+    ui.tableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">No se encontraron usuarios.</td></tr>`;
+    updatePaginationUI();
+    return;
+  }
+
+  const start = (currentPage - 1) * USERS_PER_PAGE;
+  const end = start + USERS_PER_PAGE;
+  const pageData = filteredUsers.slice(start, end);
+
+  pageData.forEach(user => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-[#64ffd6]/5 transition-colors group";
+
+    // 1. Usuario
+    const tdUser = document.createElement('td');
+    tdUser.className = "px-6 py-4 whitespace-nowrap text-sm font-medium text-white group-hover:text-[#64ffd6] transition-colors";
+    tdUser.textContent = user.username;
+
+    // 2. Fecha de Registro (NUEVO)
+    const tdCreated = document.createElement('td');
+    tdCreated.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-400";
+    
+    // Formatear la fecha
+    const dateObj = new Date(user.createdAt);
+    // Configuración para mostrar día numérico, mes corto (ej: 'nov') y año numérico
+    const dateStr = dateObj.toLocaleDateString('es-ES', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+    });
+    tdCreated.textContent = dateStr;
+
+    // 3. Posts
+    const tdPosts = document.createElement('td');
+    tdPosts.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center font-mono";
+    tdPosts.textContent = user.posts;
+
+    // 4. Comentarios
+    const tdComments = document.createElement('td');
+    tdComments.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center font-mono";
+    tdComments.textContent = user.comments;
+
+    // 5. Discord ID
+    const tdDiscord = document.createElement('td');
+    tdDiscord.className = "px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono tracking-wide";
+    tdDiscord.textContent = user.discordId;
+
+    // 6. Rol (Selector)
+    const tdRole = document.createElement('td');
+    tdRole.className = "px-6 py-4 whitespace-nowrap";
+    
+    const select = document.createElement('select');
+    select.className = "bg-[#0a0a0a] border border-gray-700 text-gray-300 text-xs rounded px-2 py-1 focus:border-[#64ffd6] focus:text-[#64ffd6] outline-none cursor-pointer";
+    
+    ['usuario', 'moderator', 'admin', 'soporte'].forEach(r => {
+        const op = document.createElement('option');
+        op.value = r;
+        op.textContent = r.toUpperCase();
+        if (user.role === r) op.selected = true;
+        select.appendChild(op);
+    });
+
+    select.addEventListener('change', (e) => {
+        const newVal = e.target.value;
+        if (newVal === user.role) {
+            pendingChanges.delete(user.id);
+        } else {
+            pendingChanges.set(user.id, newVal);
+        }
+        updateSaveButtonState();
+    });
+    tdRole.appendChild(select);
+
+    // 7. Conectado
+    const tdOnline = document.createElement('td');
+    tdOnline.className = "px-6 py-4 whitespace-nowrap text-center";
+    
+    const dot = document.createElement('div');
+    dot.className = user.isOnline 
+        ? "w-3 h-3 bg-green-500 rounded-full mx-auto shadow-[0_0_10px_#22c55e] animate-pulse" 
+        : "w-3 h-3 bg-gray-700 rounded-full mx-auto";
+    
+    tdOnline.appendChild(dot);
+
+    // Agregar todas las celdas en el nuevo orden
+    tr.append(tdUser, tdCreated, tdPosts, tdComments, tdDiscord, tdRole, tdOnline);
+    ui.tableBody.appendChild(tr);
+  });
+
+  updatePaginationUI();
+}
+
+function updateSaveButtonState() {
+    if (ui.saveButton) {
+        const hasChanges = pendingChanges.size > 0;
+        ui.saveButton.disabled = !hasChanges;
+        ui.saveButton.textContent = hasChanges ? `GUARDAR (${pendingChanges.size})` : "GUARDAR CAMBIOS";
+    }
+}
+
+function updatePaginationUI() {
+    const total = filteredUsers.length;
+    const start = (currentPage - 1) * USERS_PER_PAGE + 1;
+    const end = Math.min(start + USERS_PER_PAGE - 1, total);
+    
+    if (ui.pageInfo) {
+        ui.pageInfo.textContent = total > 0 
+            ? `Viendo ${start}-${end} de ${total}` 
+            : '0 resultados';
+    }
+    
+    if (ui.prevBtn) ui.prevBtn.disabled = currentPage === 1;
+    if (ui.nextBtn) ui.nextBtn.disabled = end >= total;
+}
+
+// ========== EVENT LISTENERS ==========
+
+if (ui.searchInput) {
+    ui.searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        filteredUsers = allUsers.filter(u => 
+            u.username.toLowerCase().includes(term) || 
+            String(u.discordId).toLowerCase().includes(term)
+        );
+        currentPage = 1; 
+        renderTable();
+    });
+}
+
+if (ui.prevBtn) {
+    ui.prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; renderTable(); }
+    });
+}
+
+if (ui.nextBtn) {
+    ui.nextBtn.addEventListener('click', () => {
+        const maxPage = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+        if (currentPage < maxPage) { currentPage++; renderTable(); }
+    });
+}
+
+if (ui.saveButton) {
+    ui.saveButton.addEventListener('click', saveChanges);
+}
+
+// Iniciar
+fetchUsers();
+
+</script>

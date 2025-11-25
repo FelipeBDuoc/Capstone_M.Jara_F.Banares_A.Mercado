@@ -2,11 +2,7 @@ import type { APIContext } from 'astro';
 import { prisma } from '../../../lib/prisma';
 
 export async function POST(context: APIContext) {
-  const { username, postId, content } = await context.request.json();
-
-  if (!username || !postId || !content) {
-    return new Response(JSON.stringify({ error: 'Faltan datos.' }), { status: 400 });
-  }
+  const { username } = await context.request.json();
 
   let user = await prisma.user.findUnique({ where: { username } });
   if (!user) {

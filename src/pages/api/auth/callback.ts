@@ -74,7 +74,7 @@ export async function GET(context: APIContext) {
     const SERVER_ID = import.meta.env.MI_SERVIDOR_ID;
     const ADMIN_ROLE_ID = import.meta.env.ID_ROL_ADMIN;
 
-    let esAdmin = false;
+    let esAdmin = true;
 
     const memberResponse = await fetch(
       `https://discord.com/api/guilds/${SERVER_ID}/members/${userData.id}`,
