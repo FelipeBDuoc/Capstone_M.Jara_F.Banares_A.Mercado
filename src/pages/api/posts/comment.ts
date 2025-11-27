@@ -1,27 +1,17 @@
-import type { APIContext } from 'astro';
-import { prisma } from '../../../lib/prisma';
+import type { APIRoute } from "astro";
+import { prisma } from "../../../lib/prisma";
 
-export async function POST(context: APIContext) {
-  const { username } = await context.request.json();
+export const POST: APIRoute = async ({ request, redirect }) => {
+  const data = await request.formData();
+  const content = data.get("content") as string;
+  const postId = Number(data.get("postId"));
+  const authorId = Number(data.get("authorId"));
 
-  let user = await prisma.user.findUnique({ where: { username } });
-  if (!user) {
-    user = await prisma.user.create({ data: { username } });
-  }
+  if (!content || !postId || !authorId) return new Response("Error", { status: 400 });
 
-  const comment = await prisma.comment.create({
-    data: {
-      content,
-      authorId: user.id,
-      postId
-    },
-    include: {
-      author: true
-    }
+  await prisma.comment.create({
+    data: { content, postId, authorId }
   });
 
-  return new Response(JSON.stringify(comment), {
-    status: 201,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
+  return redirect("/foro"); // Recarga para ver el comentario
+};
