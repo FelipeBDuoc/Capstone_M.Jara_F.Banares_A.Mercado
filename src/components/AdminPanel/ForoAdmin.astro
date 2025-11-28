@@ -1,19 +1,19 @@
----
----
-<div>
-    <h2>Administración de Posts</h2>
-    
-    <table class="table-auto w-full border-collapse border border-gray-300">
+<div class="w-full mx-auto  lg:grid-cols-12 p-12">
+  <h2 class="text-2xl font-semibold text-light mb-4">Administración de Posts</h2>
+
+  <div class="rounded-lg border border-[#64ffd6] overflow-hidden">
+    <table class="table-auto w-full border-collapse border border-[#64ffd6] ">
       <thead>
         <tr class="">
-          <th class="border border-gray-300 p-2">ID</th>
-          <th class="border border-gray-300 p-2">Título</th>
-          <th class="border border-gray-300 p-2">Acciones</th>
+          <th class="border border-[#64ffd6] p-2">ID</th>
+          <th class="border border-[#64ffd6] p-2">Título</th>
+          <th class="border border-[#64ffd6] p-2">Acciones</th>
         </tr>
       </thead>
     
       <tbody id="posts-container"></tbody>
     </table>
+  </div>
 </div>
 
 <script>
@@ -30,12 +30,12 @@ async function cargarPosts() {
     // ID
     const tdId = document.createElement("td");
     tdId.textContent = post.id;
-    tdId.className = "border border-gray-300 p-2";
+    tdId.className = "border border-[#64ffd6] p-2";
 
     // TÍTULO
     const tdTitle = document.createElement("td");
     tdTitle.textContent = post.title;
-    tdTitle.className = "border border-gray-300 p-2";
+    tdTitle.className = "border border-[#64ffd6] p-2";
 
     // ACCIONES
     const tdActions = document.createElement("td");
