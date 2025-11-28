@@ -25,3 +25,39 @@ export async function GET(context: APIContext) {
     headers: { 'Content-Type': 'application/json' }
   });
 }
+
+export async function DELETE({ params }: APIContext) {
+  try {
+    const id = Number(params.id);
+
+    if (isNaN(id)) {
+      return new Response("ID inválido", { status: 400 });
+    }
+
+    // Eliminar reacciones
+    await prisma.reaction.deleteMany({
+      where: { postId: id }
+    });
+
+    // Eliminar comentarios
+    await prisma.comment.deleteMany({
+      where: { postId: id }
+    });
+
+    // Eliminar media
+    await prisma.media.deleteMany({
+      where: { postId: id }
+    });
+
+    // Finalmente eliminar el post
+    await prisma.post.delete({
+      where: { id }
+    });
+
+    return new Response("Post eliminado", { status: 200 });
+
+  } catch (err) {
+    console.error(err);
+    return new Response("Error", { status: 500 });
+  }
+}
