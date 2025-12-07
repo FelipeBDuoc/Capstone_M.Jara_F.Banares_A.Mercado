@@ -29,7 +29,7 @@ CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "discordId" TEXT NOT NULL,
     "username" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'usuario',
+    "role" TEXT NOT NULL DEFAULT 'User',
     "bio" TEXT,
     "connected" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -81,11 +81,30 @@ CREATE TABLE "Reaction" (
     CONSTRAINT "Reaction_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "ServerConfig" (
+    "id" SERIAL NOT NULL,
+    "proxmoxId" INTEGER NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'VM',
+    "name" TEXT NOT NULL,
+    "host" TEXT NOT NULL,
+    "port" INTEGER NOT NULL DEFAULT 22,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ServerConfig_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_discordId_key" ON "User"("discordId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Reaction_userId_postId_key" ON "Reaction"("userId", "postId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ServerConfig_proxmoxId_key" ON "ServerConfig"("proxmoxId");
 
 -- AddForeignKey
 ALTER TABLE "Post" ADD CONSTRAINT "Post_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -1,6 +1,7 @@
 ---
 // --- BLOQUE 1: FRONTMATTER (Servidor) ---
 import SshPanel from './ConsolaSSH.astro';
+import SshAdmin from './ConsolaAdmin.astro';
 import CarruselAdmin from './CarruselAdmin.astro';
 import UserAdmin from './UserAdmin.astro';
 import NewsAdmin from './NewsAdmin.astro';
@@ -21,6 +22,14 @@ import ForoAdmin from './ForoAdmin.astro';
       >
         <h3 class="text-xl font-semibold text-light mb-2">Conexión SSH</h3>
         <p class="text-gray-400">Accede a la terminal web de tus máquinas.</p>
+      </button>
+
+      <button 
+        class="show-tool-btn p-8 rounded-lg text-left transition-all duration-200 hover:bg-gray-900 hover:border-[#64ffd6] border border-white hover:shadow-xl shadow-[#00ffbb]/25" 
+        data-tool="tool-2"
+      >
+        <h3 class="text-xl font-semibold text-light mb-2">Modificar Máquinas Virtuales</h3>
+        <p class="text-gray-400">Accede a la pagina para modificar las credenciales de máquinas virtuales.</p>
       </button>
 
       <button 
@@ -79,18 +88,22 @@ import ForoAdmin from './ForoAdmin.astro';
       </div>
 
       <div id="tool-2" class="tool-wrapper h-full" style="display: none;">
-        <CarruselAdmin/>
+        <SshAdmin/>
       </div>
 
       <div id="tool-3" class="tool-wrapper h-full" style="display: none;">
-        <UserAdmin/>
+        <CarruselAdmin/>
       </div>
 
       <div id="tool-4" class="tool-wrapper h-full" style="display: none;">
-        <ForoAdmin>
+        <UserAdmin/>
       </div>
 
       <div id="tool-5" class="tool-wrapper h-full" style="display: none;">
+        <ForoAdmin>
+      </div>
+
+      <div id="tool-6" class="tool-wrapper h-full" style="display: none;">
         <NewsAdmin/>
       </div>
       

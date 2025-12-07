@@ -1,0 +1,310 @@
+---
+---
+
+<div class="w-full text-gray-200 p-12 caret-transparent font-sans">
+  
+  <div class="flex justify-between items-center mb-6 gap-4">
+    <button
+      id="save-changes-btn"
+      class="px-5 py-2 text-sm font-bold text-white bg-green-600/80 border border-green-500 rounded shadow-[0_0_15px_rgba(74,222,128,0.3)] transition-all hover:bg-green-500 hover:shadow-[0_0_20px_rgba(74,222,128,0.5)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed disabled:bg-gray-700 disabled:border-gray-600"
+      disabled
+    >
+      GUARDAR CAMBIOS
+    </button>
+    
+    <div class="relative w-full max-w-xs">
+      <input 
+        type="search"
+        id="server-search-input"
+        placeholder="Buscar por Nombre o ID..."
+        class="w-full px-4 py-2 bg-[#111] border border-[#64ffd6] rounded text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#64ffd6] focus:shadow-[0_0_10px_#64ffd6] caret-[#64ffd6]"
+      />
+      <svg class="absolute right-3 top-2.5 h-5 w-5 text-[#64ffd6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    </div>
+  </div>
+
+  <div class="relative overflow-x-auto shadow-[0_0_20px_rgba(0,0,0,0.5)] rounded border border-[#64ffd6]/30 bg-[#1e2124]">
+    <table class="w-full text-sm text-left text-gray-400">
+      <thead class="text-xs text-[#64ffd6] uppercase bg-dark-secondary border-b border-[#64ffd6]/30">
+        <tr>
+          <th scope="col" class="px-6 py-3 w-20 text-center">ID (PVE)</th>
+          <th scope="col" class="px-6 py-3 w-20 text-center">Tipo</th>
+          <th scope="col" class="px-6 py-3">Nombre (Display)</th>
+          <th scope="col" class="px-6 py-3">Host / DNS</th>
+          <th scope="col" class="px-6 py-3 w-24">Puerto</th>
+          <th scope="col" class="px-6 py-3">Usuario SSH</th>
+          <th scope="col" class="px-6 py-3">Password SSH</th>
+        </tr>
+      </thead>
+      <tbody id="servers-table-body">
+        <tr class="border-b border-gray-800 bg-[#111]">
+            <td colspan="7" class="px-6 py-10 text-center italic text-gray-500 animate-pulse">
+                Cargando configuración de servidores...
+            </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-between items-center mt-4">
+    <div id="page-info" class="text-sm text-gray-400"></div>
+    <div class="flex gap-2">
+        <button id="prev-btn" class="px-3 py-1 text-sm bg-dark-highlight border border-gray-600 rounded text-gray-300 hover:border-[#64ffd6] disabled:opacity-30">Anterior</button>
+        <button id="next-btn" class="px-3 py-1 text-sm bg-dark-highlight border border-gray-600 rounded text-gray-300 hover:border-[#64ffd6] disabled:opacity-30">Siguiente</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ========== ESTADO ==========
+let allServers = [];
+let filteredServers = [];
+let pendingChanges = new Map(); // Key: dbID, Value: { field: value, ... }
+let currentPage = 1;
+const SERVERS_PER_PAGE = 8;
+
+// ========== SELECTORES UI ==========
+const ui = {
+    tableBody: document.getElementById('servers-table-body'),
+    searchInput: document.getElementById('server-search-input'),
+    saveBtn: document.getElementById('save-changes-btn'),
+    prevBtn: document.getElementById('prev-btn'),
+    nextBtn: document.getElementById('next-btn'),
+    pageInfo: document.getElementById('page-info')
+};
+
+// ========== INICIALIZACIÓN ==========
+async function init() {
+    try {
+        const res = await fetch('/api/maquinas');
+        if (!res.ok) throw new Error('Error cargando servidores');
+        allServers = await res.json();
+        filteredServers = [...allServers];
+        renderTable();
+    } catch (e) {
+        console.error(e);
+        if(ui.tableBody) ui.tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-red-500 py-8">Error de conexión</td></tr>`;
+    }
+}
+
+// ========== RENDERIZADO ==========
+function renderTable() {
+    if (!ui.tableBody) return;
+    ui.tableBody.innerHTML = '';
+
+    const start = (currentPage - 1) * SERVERS_PER_PAGE;
+    const end = start + SERVERS_PER_PAGE;
+    const pageData = filteredServers.slice(start, end);
+
+    if (pageData.length === 0) {
+        ui.tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-gray-500 py-8 italic">No se encontraron servidores</td></tr>`;
+        updatePaginationUI();
+        return;
+    }
+
+    pageData.forEach(server => {
+        const tr = document.createElement('tr');
+        tr.className = 'bg-[#111] border-b border-gray-800 hover:bg-[#1a1d21] transition-colors';
+        
+        // Verificamos si hay cambios pendientes para esta fila
+        const changes = pendingChanges.get(server.id) || {};
+        
+        // Valores actuales (o modificados si existen en pending)
+        const nameVal = changes.name !== undefined ? changes.name : server.name;
+        const hostVal = changes.host !== undefined ? changes.host : server.host;
+        const portVal = changes.port !== undefined ? changes.port : server.port;
+        const userVal = changes.username !== undefined ? changes.username : server.username;
+        const passVal = changes.password !== undefined ? changes.password : server.password;
+
+        // Estilo común para inputs
+        const inputClass = "bg-transparent border border-transparent hover:border-gray-700 focus:border-[#64ffd6] focus:bg-[#0d0f11] focus:outline-none text-gray-300 w-full px-2 py-1 rounded transition-all placeholder-gray-600";
+
+        tr.innerHTML = `
+            <td class="px-6 py-4 text-center font-mono text-[#64ffd6]">${server.proxmoxId}</td>
+            <td class="px-6 py-4 text-center">
+                <span class="px-2 py-1 rounded text-xs font-bold ${server.type === 'VM' ? 'bg-blue-900/30 text-blue-400 border border-blue-800' : 'bg-purple-900/30 text-purple-400 border border-purple-800'}">
+                    ${server.type}
+                </span>
+            </td>
+            
+            <td class="px-4 py-2">
+                <input type="text" data-id="${server.id}" data-field="name" value="${nameVal}" class="${inputClass}" />
+            </td>
+            <td class="px-4 py-2">
+                <input type="text" data-id="${server.id}" data-field="host" value="${hostVal}" class="${inputClass}" />
+            </td>
+            <td class="px-4 py-2">
+                <input type="number" data-id="${server.id}" data-field="port" value="${portVal}" class="${inputClass} text-center" />
+            </td>
+            <td class="px-4 py-2">
+                <input type="text" data-id="${server.id}" data-field="username" value="${userVal}" class="${inputClass}" />
+            </td>
+            <td class="px-4 py-2">
+                <input type="password" data-id="${server.id}" data-field="password" value="${passVal}" class="${inputClass} text-xs font-mono tracking-widest" />
+            </td>
+        `;
+
+        ui.tableBody.appendChild(tr);
+    });
+
+    // Agregar Listeners a los inputs recién creados
+    document.querySelectorAll('#servers-table-body input').forEach(input => {
+        input.addEventListener('input', handleInputChange);
+    });
+
+    updatePaginationUI();
+    updateSaveButton();
+}
+
+
+// ========== LÓGICA DE CAMBIOS ==========
+
+function handleInputChange(e) {
+    const input = e.target;
+    const id = parseInt(input.dataset.id);
+    const field = input.dataset.field;
+    let value = input.value;
+    
+    // Si es puerto, asegurar que sea int
+    if (field === 'port') value = parseInt(value) || 22;
+
+    const originalServer = allServers.find(s => s.id === id);
+    if (!originalServer) return;
+
+    // Obtener objeto de cambios actual para este ID
+    let currentChanges = pendingChanges.get(id) || {};
+
+    // Comparamos con el original
+    if (originalServer[field] == value) {
+        // Si volvemos al valor original, borramos el cambio
+        delete currentChanges[field];
+        if (Object.keys(currentChanges).length === 0) {
+            pendingChanges.delete(id);
+        } else {
+            pendingChanges.set(id, currentChanges);
+        }
+    } else {
+        // Es un valor nuevo, lo guardamos
+        currentChanges[field] = value;
+        pendingChanges.set(id, currentChanges);
+    }
+    
+    // Feedback visual (borde amarillo si está modificado)
+    if (originalServer[field] != value) {
+        input.classList.add('border-yellow-500/50', 'text-yellow-200');
+        input.classList.remove('border-transparent');
+    } else {
+        input.classList.remove('border-yellow-500/50', 'text-yellow-200');
+        input.classList.add('border-transparent');
+    }
+
+    updateSaveButton();
+}
+
+function updateSaveButton() {
+    if (ui.saveBtn) {
+        const hasChanges = pendingChanges.size > 0;
+        ui.saveBtn.disabled = !hasChanges;
+        
+        let totalFieldsChanged = 0;
+        pendingChanges.forEach(changes => totalFieldsChanged += Object.keys(changes).length);
+
+        ui.saveBtn.textContent = hasChanges 
+            ? `GUARDAR (${totalFieldsChanged} CAMBIOS)` 
+            : "GUARDAR CAMBIOS";
+        
+        if (hasChanges) {
+             ui.saveBtn.classList.add('animate-pulse');
+        } else {
+             ui.saveBtn.classList.remove('animate-pulse');
+        }
+    }
+}
+
+// ========== GUARDAR CAMBIOS ==========
+
+if (ui.saveBtn) {
+    ui.saveBtn.addEventListener('click', async () => {
+        ui.saveBtn.disabled = true;
+        ui.saveBtn.textContent = "GUARDANDO...";
+        
+        // Convertimos el Map a un array para enviarlo
+        const payload = [];
+        pendingChanges.forEach((changes, id) => {
+            payload.push({ id, ...changes });
+        });
+
+        try {
+            const res = await fetch('/api/maquinas', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error('Fallo al guardar');
+
+            // Recargar datos para confirmar
+            await init();
+            
+            // Limpiar estado
+            pendingChanges.clear();
+            updateSaveButton();
+            
+            // Feedback simple
+            alert('✅ Configuración actualizada correctamente');
+
+        } catch (e) {
+            console.error(e);
+            alert('❌ Error al guardar los cambios');
+            ui.saveBtn.disabled = false;
+        }
+    });
+}
+
+// ========== PAGINACIÓN Y FILTROS ==========
+
+function updatePaginationUI() {
+    const total = filteredServers.length;
+    const start = (currentPage - 1) * SERVERS_PER_PAGE + 1;
+    const end = Math.min(start + SERVERS_PER_PAGE - 1, total);
+    
+    if (ui.pageInfo) {
+        ui.pageInfo.textContent = total > 0 
+            ? `Mostrando ${start}-${end} de ${total}` 
+            : '0 resultados';
+    }
+    
+    if (ui.prevBtn) ui.prevBtn.disabled = currentPage === 1;
+    if (ui.nextBtn) ui.nextBtn.disabled = end >= total;
+}
+
+if (ui.searchInput) {
+    ui.searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        filteredServers = allServers.filter(s => 
+            s.name.toLowerCase().includes(term) || 
+            String(s.proxmoxId).includes(term) ||
+            s.host.toLowerCase().includes(term)
+        );
+        currentPage = 1; 
+        renderTable();
+    });
+}
+
+if (ui.prevBtn) {
+    ui.prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; renderTable(); }
+    });
+}
+if (ui.nextBtn) {
+    ui.nextBtn.addEventListener('click', () => {
+        const maxPages = Math.ceil(filteredServers.length / SERVERS_PER_PAGE);
+        if (currentPage < maxPages) { currentPage++; renderTable(); }
+    });
+}
+
+// Iniciar
+init();
+
+</script>

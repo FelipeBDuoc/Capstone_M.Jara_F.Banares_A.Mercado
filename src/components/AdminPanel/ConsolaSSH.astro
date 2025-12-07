@@ -11,7 +11,10 @@
             Máquinas Virtuales
         </div>
         <div class="flex-1 overflow-y-auto p-4 space-y-3" id="vm-list-left">
+            <div class="flex justify-center items-center h-full">
+                <span class="text-yellow-400 italic text-sm animate-pulse">Sincronizando inventario...</span>
             </div>
+        </div>
     </div>
     
     <div class="w-3/5 flex flex-col rounded-lg border border-[#64ffd6] shadow-lg shadow-[#00ffbb]/25 overflow-hidden bg-[#1e2124]">
@@ -39,13 +42,10 @@
 </div>
 
 <script>
-// ========== 1. CONFIGURACIÓN Y ESTADO GLOBAL ==========
+// ========== 1. ESTADO GLOBAL ==========
 
-const vmConfig = [
-  { id: 100, name: "Ubuntu", host: "amercado.ddns.net" },
-  { id: 101, name: "Windows", host: "amercado.ddns.net" },
-  { id: 102, name: "Servidor Web", host: "host.para.vm.102" },
-];
+// Ya no usamos vmConfig hardcodeado. Lo llenaremos dinámicamente.
+let vmConfig = []; 
 
 const vmListLeft = document.getElementById('vm-list-left');
 const consoleContainer = document.getElementById('console-container');
@@ -62,7 +62,20 @@ let cpuProgress = null;
 let ramProgress = null;
 
 
-// ========== 2. LÓGICA DE DATOS (API PROXMOX) ==========
+async function initializeSystem() {
+    try {
+        console.log("🔄 Ejecutando sincronización automática...");
+
+        await fetch('/api/sync-vms', { method: 'POST' });
+        
+        fetchAndRefreshData();
+        setInterval(fetchAndRefreshData, 5000);
+        
+    } catch (e) {
+        console.error("Error en inicialización:", e);
+        if(vmListLeft) vmListLeft.innerHTML = '<div class="text-red-400 p-4 text-sm">Error de conexión con el servidor.</div>';
+    }
+}
 
 function translateStatus(status) {
     if (status === 'running') return 'Conectado';
@@ -75,7 +88,6 @@ function translateStatus(status) {
 function formatUptime(seconds) {
     if (!seconds || seconds <= 0) return 'Apagada';
     if (seconds < 60) return 'Hace un momento';
-
     const d = Math.floor(seconds / (3600 * 24));
     const h = Math.floor((seconds % (3600 * 24)) / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -96,6 +108,7 @@ function formatBytesToGB(bytes) {
 async function fetchAndRefreshData() {
     try {
         const response = await fetch('/api/monitor.json');
+        
         if (!response.ok) {
             console.error('Error al cargar datos de la API');
             vmStore.forEach(vm => {
@@ -106,13 +119,22 @@ async function fetchAndRefreshData() {
         }
         
         const apiDataArray = await response.json();
+        
+        // Actualizamos el Store dinámicamente
         apiDataArray.forEach(data => {
-            const config = vmConfig.find(c => c.id === data.vmid);
-            if (config) {
-                const mergedVM = { ...data, host: config.host };
-                vmStore.set(data.vmid, mergedVM);
-            }
+            // Si el endpoint monitor ya trae el host (ideal), lo usamos.
+            // Si no, usamos un fallback temporal.
+            const host = data.host || 'amercado.ddns.net'; // Fallback si la API no lo envía
+            const name = data.name || `VM ${data.vmid}`;
+
+            const mergedVM = { 
+                ...data, 
+                host: host,
+                name: name 
+            };
+            vmStore.set(data.vmid, mergedVM);
         });
+
         renderVMList();
         updateResourcesUI(); 
 
@@ -121,51 +143,24 @@ async function fetchAndRefreshData() {
     }
 }
 
-function populateInitialStore() {
-    vmStore.clear();
-    vmConfig.forEach(vm => {
-        vmStore.set(vm.id, {
-            vmid: vm.id,
-            name: vm.name,
-            host: vm.host,
-            status: 'loading',
-            cpu: 0, mem: 0, maxmem: 1,
-            disk: 0, maxdisk: 1,
-            uptime: 0
-        });
-    });
-}
-
-
-// ========== 3. FUNCIONES DE UI (PANELES LATERALES) ==========
+// ========== 3. FUNCIONES DE UI ==========
 
 function destroyProgressBars() {
-    if (cpuProgress) {
-        cpuProgress.destroy();
-        cpuProgress = null;
-    }
-    if (ramProgress) {
-        ramProgress.destroy();
-        ramProgress = null;
-    }
+    if (cpuProgress) { cpuProgress.destroy(); cpuProgress = null; }
+    if (ramProgress) { ramProgress.destroy(); ramProgress = null; }
 }
 
-/**
- * Renderiza la lista de VMs
- * MODIFICADO: Estilo de lista más limpio y acorde al AdminPanel
- */
 function renderVMList() {
     if (!vmListLeft) return;
     vmListLeft.innerHTML = ''; 
 
     if (vmStore.size === 0) {
-        vmListLeft.innerHTML = '<div class="p-4 text-gray-400 italic text-sm">No hay VMs configuradas...</div>';
+        vmListLeft.innerHTML = '<div class="p-4 text-gray-400 italic text-sm">No hay VMs detectadas...</div>';
         return;
     }
 
     vmStore.forEach(vm => {
         const vmItem = document.createElement('div');
-        // Estilo base: borde sutil, fondo oscuro
         vmItem.className = 'vm-item group flex flex-col p-3 rounded-md border border-dark-highlight cursor-pointer transition-all duration-200 hover:bg-dark-highlight/30 hover:border-[#64ffd6]/50';
         vmItem.dataset.id = vm.vmid;
 
@@ -204,41 +199,23 @@ function renderVMList() {
     if (selectedVMID) {
         const selectedItem = document.querySelector(`.vm-item[data-id="${selectedVMID}"]`);
         if (selectedItem) {
-            // Estilo seleccionado: Borde Neon y fondo ligeramente iluminado
             selectedItem.classList.remove('border-dark-highlight');
             selectedItem.classList.add('bg-dark-highlight/50', 'border-[#64ffd6]', 'shadow-[0_0_10px_rgba(100,255,214,0.15)]');
         }
     }
 }
 
-/**
- * Renderiza el panel derecho (recursos)
- * MODIFICADO: Tarjetas con bordes sutiles para encajar dentro del contenedor principal
- */
 function updateResourcesUI() {
     if (!resourcesContainer) return;
-
+    
     if (!selectedVMID) {
         destroyProgressBars();
         resourcesContainer.innerHTML = `<div class="flex justify-center items-center h-full text-gray-500 italic text-sm">Selecciona una VM para ver métricas</div>`;
         return;
     }
+    
     const vm = vmStore.get(selectedVMID);
-    if (!vm) {
-        destroyProgressBars();
-        resourcesContainer.innerHTML = `<div class="p-4 text-yellow-400 italic text-sm">Datos no encontrados...</div>`;
-        return;
-    }
-    if (vm.status === 'loading') {
-        destroyProgressBars();
-        resourcesContainer.innerHTML = `<div class="p-4 text-yellow-400 italic text-sm">Cargando métricas...</div>`;
-        return;
-    }
-    if (vm.status === 'error') {
-        destroyProgressBars();
-        resourcesContainer.innerHTML = `<div class="p-4 text-red-400 italic text-sm">Error API</div>`;
-        return;
-    }
+    if (!vm) return; // Validación simple
 
     // Cálculos
     const cpuPercent = (vm.cpu || 0);
@@ -250,8 +227,8 @@ function updateResourcesUI() {
     const uptime = vm.uptime || 0;
     const statusText = translateStatus(vm.status);
     const statusClass = vm.status === 'running' ? 'text-green-400' : 'text-red-400';
-    
-    // HTML Estructura
+
+    // Si no existen las barras, creamos la estructura HTML
     if (!cpuProgress) { 
         resourcesContainer.innerHTML = `
             <div class="bg-[#111] rounded-md p-4 border border-gray-700/50">
@@ -290,7 +267,7 @@ function updateResourcesUI() {
             </div>
         `;
         
-        // Inicialización ProgressBar
+        // Inicialización ProgressBar.js
         const commonProgressOptions = {
             strokeWidth: 10, trailWidth: 4, trailColor: '#1f2937', duration: 300, easing: 'linear',
             text: { className: 'progressbar-text text-xs font-mono text-gray-200', style: { position: 'absolute', left: '50%', top: '50%', padding: 0, margin: 0, transform: { prefix: true, value: 'translate(-50%, -50%)' } } },
@@ -302,14 +279,14 @@ function updateResourcesUI() {
     }
 
     // Actualización de Valores
-    if (cpuProgress) cpuProgress.animate(cpuPercent); 
+    if (cpuProgress) cpuProgress.animate(cpuPercent);
     if (ramProgress) ramProgress.animate(ramPercent);
 
     const storageBar = document.getElementById('storage-bar');
     const storageTextEl = document.getElementById('storage-percent-text');
     const uptimeText = document.getElementById('uptime-text');
     const statusTextEl = document.getElementById('status-text');
-
+    
     if (storageBar) storageBar.style.width = `${storagePercentForBar}%`;
     if (storageTextEl) storageTextEl.textContent = storageText;
     if (uptimeText) uptimeText.textContent = formatUptime(uptime);
@@ -325,22 +302,18 @@ function selectVM(vmid) {
 
     destroyProgressBars(); 
     disconnectSSH();
-    selectedVMID = vmid; 
-    
-    // Renderiza la lista para actualizar selección
+    selectedVMID = vmid;
     renderVMList();
     updateConsole(vm); 
     updateResourcesUI();
 }
 
-
-// ========== 4. FUNCIONES SSH Y DE TERMINAL ==========
+// ========== 4. FUNCIONES SSH Y TERMINAL ==========
 
 function updateConnectionStatus(status, color) {
     const statusElement = document.getElementById('connection-status');
     if (statusElement) {
         statusElement.textContent = status;
-        // Mapeo simple de colores para Tailwind
         const colorClass = color === 'green' ? 'text-green-400' : (color === 'yellow' ? 'text-yellow-400' : 'text-red-400');
         statusElement.className = `${colorClass} font-mono`;
     }
@@ -363,10 +336,7 @@ function initializeTerminal() {
                 isTerminalReady = false;
             }
             const terminalElement = document.getElementById('terminal');
-            if (!terminalElement) {
-                reject(new Error('No terminal element'));
-                return;
-            }
+            if (!terminalElement) { reject(new Error('No terminal element')); return; }
             
             terminal = new Terminal({
                 cursorBlink: true,
@@ -394,10 +364,6 @@ function initializeTerminal() {
     });
 }
 
-/**
- * Actualiza el panel central (Consola)
- * MODIFICADO: Estilos de botones para coincidir con UserAdmin
- */
 function updateConsole(vm) {
     if (!consoleContainer || !noVmSelected) return;
     noVmSelected.style.display = 'none';
@@ -427,11 +393,7 @@ function updateConsole(vm) {
             <span class="text-xs text-gray-500">Estado: <span id="connection-status" class="text-gray-400">Listo para conectar</span></span>
         </div>
     `;
-    
-    setTimeout(async () => {
-        await initializeTerminal();
-    }, 50);
-
+    setTimeout(async () => { await initializeTerminal(); }, 50);
     setTimeout(() => {
         const connectBtn = document.querySelector('.connect-btn');
         const disconnectBtn = document.querySelector('.disconnect-btn');
@@ -445,9 +407,8 @@ async function connectSSH(vm) {
     if (!isTerminalReady) await initializeTerminal();
 
     safeTerminalWrite(`\r\n\x1b[1;33m🔄 Iniciando conexión a ${vm.name}...\x1b[0m\r\n`);
-    
-    // (Simulación de health check para simplificar el código visual, lógica real abajo)
     try {
+        // Ajusta esta URL si tu servidor de sockets está en otro puerto
         const response = await fetch('http://localhost:3001/health');
         if (!response.ok) throw new Error('Backend offline');
     } catch (error) {
@@ -479,7 +440,7 @@ async function connectSSH(vm) {
         } catch (e) {}
     };
     
-    socket.onclose = (event) => {
+    socket.onclose = () => {
         safeTerminalWrite('\r\n\x1b[1;33m🔌 Conexión cerrada\x1b[0m\r\n');
         updateConnectionStatus('Desconectado', 'red');
     };
@@ -499,10 +460,7 @@ async function connectSSH(vm) {
 }
 
 function disconnectSSH() {
-    if (socket) {
-        socket.close();
-        socket = null;
-    }
+    if (socket) { socket.close(); socket = null; }
     safeTerminalWrite('\r\n\x1b[1;33m🔌 Desconectado por el usuario\x1b[0m\r\n');
     updateConnectionStatus('Desconectado', 'red');
 }
@@ -510,9 +468,7 @@ function disconnectSSH() {
 // ========== 5. INICIALIZACIÓN ==========
 
 document.addEventListener('DOMContentLoaded', () => {
-    populateInitialStore();
-    renderVMList();
-    fetchAndRefreshData();
-    setInterval(fetchAndRefreshData, 5000);
+    // Aquí inicia la magia de sincronización automática
+    initializeSystem();
 });
 </script>

@@ -1,10 +1,8 @@
 import type { APIRoute } from 'astro';
 import { Agent } from 'https';
 import axios from 'axios';
+import { prisma } from "../../lib/prisma";
 
-// --- Configuración ---
-const VM_IDS = [100, 101, 102];
-// ---------------------
 
 // Lee las variables de entorno
 const BASE_URL = import.meta.env.PROXMOX_URL;
@@ -29,35 +27,32 @@ const proxmoxApi = axios.create({
 });
 
 /**
- * (FUNCIÓN CORREGIDA)
  * Procesa la respuesta de 'get-fsinfo' para obtener el uso de disco.
  * Lee 'used-bytes' y 'total-bytes' del JSON.
  */
-function getDiskUsage(fsInfo) {
+function getDiskUsage(fsInfo: any) {
   // Si no hay 'result' o está vacío, devolvemos 0
   if (!fsInfo || !fsInfo.result || fsInfo.result.length === 0) {
     return { disk: 0, maxdisk: 1 };
   }
 
   // 1. Buscamos el filesystem raíz ('/')
-  const rootFs = fsInfo.result.find(fs => fs.mountpoint === '/');
+  const rootFs = fsInfo.result.find((fs: any) => fs.mountpoint === '/');
   
-  // ¡CAMBIO CLAVE AQUÍ!
   if (rootFs && rootFs['total-bytes'] > 0) {
     return {
-      disk: rootFs['used-bytes'],    // <-- CORREGIDO
-      maxdisk: rootFs['total-bytes'] // <-- CORREGIDO
+      disk: rootFs['used-bytes'],    
+      maxdisk: rootFs['total-bytes'] 
     };
   }
 
-  // 2. Fallback: Si no encontramos '/', sumamos todos los discos
+  // 2. Fallback: Si no encontramos '/', sumamos todos los discos válidos
   let totalUsed = 0;
   let totalMax = 0;
-  fsInfo.result.forEach(fs => {
-    // Solo sumamos si son discos válidos (tienen 'device' o 'total-bytes')
+  fsInfo.result.forEach((fs: any) => {
     if (fs['total-bytes'] > 0 && fs.mountpoint) {
-        totalUsed += fs['used-bytes'];    // <-- CORREGIDO
-        totalMax += fs['total-bytes'];   // <-- CORREGIDO
+        totalUsed += fs['used-bytes'];    
+        totalMax += fs['total-bytes'];   
     }
   });
 
@@ -67,7 +62,6 @@ function getDiskUsage(fsInfo) {
   };
 }
 
-
 export const GET: APIRoute = async () => {
   if (!BASE_URL || !NODE || !TOKEN_ID || !TOKEN_SECRET) {
     console.error("Error: Faltan variables de entorno de Proxmox.");
@@ -75,8 +69,18 @@ export const GET: APIRoute = async () => {
   }
 
   try {
-    // Hacemos dos peticiones por VM (status + disco)
-    const fetchPromises = VM_IDS.map(id => {
+    // 1. OBTENER MÁQUINAS DE LA BASE DE DATOS (En lugar del array fijo)
+    // Esto asegura que monitoreamos lo que está registrado en tu sistema
+    const dbMachines = await prisma.serverConfig.findMany();
+
+    if (!dbMachines || dbMachines.length === 0) {
+        // Si no hay máquinas en la DB, devolvemos array vacío sin error
+        return new Response(JSON.stringify([]), { status: 200 });
+    }
+
+    // 2. ITERAR SOBRE LAS MÁQUINAS DE LA DB
+    const fetchPromises = dbMachines.map(machine => {
+      const id = machine.proxmoxId;
       
       const statusUrl = `/api2/json/nodes/${NODE}/qemu/${id}/status/current`;
       const fsUrl = `/api2/json/nodes/${NODE}/qemu/${id}/agent/get-fsinfo`;
@@ -87,32 +91,60 @@ export const GET: APIRoute = async () => {
       return Promise.allSettled([statusPromise, fsPromise])
         .then(([statusResult, fsResult]) => {
           
-          // 1. Procesar status
+          // A. Procesar status
           if (statusResult.status === 'rejected' || !statusResult.value.data || !statusResult.value.data.data) {
-            throw new Error(`No se pudo obtener el estado (status/current) para VM ${id}`);
+            // Si falla Proxmox, devolvemos un objeto básico con la info de la DB y status error
+            // para que no desaparezca de la lista visual
+            return {
+                vmid: id,
+                name: machine.name, // Usamos nombre de la DB
+                status: 'stopped',  // Asumimos stopped si no responde (o 'error')
+                host: machine.host,
+                cpu: 0,
+                mem: 0,
+                maxmem: 1,
+                disk: 0,
+                maxdisk: 1,
+                uptime: 0
+            };
           }
           const vmData = statusResult.value.data.data; 
 
-          // 2. Procesar disco
+          // B. Procesar disco
           let diskInfo = { disk: 0, maxdisk: vmData.maxdisk || 1 };
           
           if (fsResult.status === 'fulfilled' && fsResult.value.data && fsResult.value.data.data) {
              const fsData = fsResult.value.data.data; 
              diskInfo = getDiskUsage(fsData); 
           } else {
+             // Fallback al disco asignado en VM config si el agente no responde
              diskInfo.maxdisk = vmData.maxdisk || 1; 
           }
           
+          // C. MERGE FINAL: Datos de Proxmox + Datos de DB (Host, Nombre personalizado)
           const mergedData = {
-            ...vmData,
+            ...vmData,           // Datos vivos (cpu, mem, status, uptime)
             disk: diskInfo.disk,       
-            maxdisk: diskInfo.maxdisk  
+            maxdisk: diskInfo.maxdisk,
+            // Sobreescribimos/Aseguramos datos estáticos desde la DB
+            name: machine.name,  
+            host: machine.host,
+            sshPort: machine.port, // Útil si el frontend lo necesita para mostrar
+            sshUser: machine.username
           };
 
           return mergedData;
         })
         .catch(error => {
-          throw new Error(`Error procesando datos para VM ${id}: ${error.message}`);
+            // Error catastrófico en el procesamiento de esta VM específica
+            console.error(`Error procesando VM ${id}:`, error);
+            return {
+                vmid: id,
+                name: machine.name,
+                host: machine.host,
+                status: 'error',
+                error: error.message
+            };
         });
     });
 
@@ -122,12 +154,14 @@ export const GET: APIRoute = async () => {
       if (result.status === 'fulfilled') {
         return result.value; 
       } else {
-        const vmId = VM_IDS[index];
-        console.error(`Fallo al obtener datos completos de VM ${vmId}:`, result.reason.message);
+        // Fallback final si la promesa principal falló (raro porque tenemos catch arriba)
+        const machine = dbMachines[index];
+        console.error(`Fallo crítico al obtener datos de VM ${machine.proxmoxId}:`, result.reason.message);
         return { 
-          vmid: vmId, 
+          vmid: machine.proxmoxId, 
           status: 'error', 
-          name: `VM ${vmId}`,
+          name: machine.name,
+          host: machine.host,
           error: result.reason.message 
         };
       }

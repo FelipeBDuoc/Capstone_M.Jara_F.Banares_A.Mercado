@@ -94,3 +94,15 @@ enum MediaType {
   PHOTO
   VIDEO
 }
+
+model ServerConfig {
+  id          Int      @id @default(autoincrement())
+  proxmoxId   Int      @unique
+  type        String   @default("VM")
+  name        String
+  host        String   
+  port        Int      @default(22)
+  username    String
+  password    String   
+  createdAt   DateTime @default(now())
+}
