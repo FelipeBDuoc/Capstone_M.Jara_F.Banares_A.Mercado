@@ -6,7 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "ssh-server": "node server.cjs",
+    "dev:all": "concurrently \"npm run ssh-server\" \"npm run dev\" --names \"SSH,ASTRO\" --prefix-colors \"yellow,cyan\""
   },
   "dependencies": {
     "@astrojs/node": "^9.5.0",
@@ -15,11 +17,16 @@
     "astro": "^5.11.1",
     "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "prisma": "^5.22.0",
-    "tailwindcss": "^4.1.8"
+    "ssh2": "^1.17.0",
+    "tailwindcss": "^4.1.8",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
-    "@types/axios": "^0.9.36"
+    "@types/axios": "^0.9.36",
+    "concurrently": "^9.2.1"
   }
 }

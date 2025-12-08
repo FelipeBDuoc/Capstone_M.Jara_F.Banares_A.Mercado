@@ -1,11 +1,9 @@
 import type { APIRoute } from 'astro';
 import { prisma } from '../../lib/prisma';
+import { encrypt } from '../../lib/crypto';
 
-
-// GET: Obtener todas las configuraciones
 export const GET: APIRoute = async () => {
   try {
-    // Ordenamos por ID de Proxmox para que sea ordenado
     const servers = await prisma.serverConfig.findMany({
       orderBy: { proxmoxId: 'asc' }
     });
@@ -19,20 +17,24 @@ export const GET: APIRoute = async () => {
   }
 };
 
-// PATCH: Guardar cambios masivos
 export const PATCH: APIRoute = async ({ request }) => {
   try {
-    const updates = await request.json(); // Array de objetos { id, field1, field2... }
+    const updates = await request.json(); 
 
     if (!Array.isArray(updates)) {
       return new Response(JSON.stringify({ error: 'Formato inválido' }), { status: 400 });
     }
 
-    // Ejecutamos una transacción para procesar todas las actualizaciones
-    // Prisma no tiene un "bulk update" nativo para diferentes valores por fila,
-    // así que iteramos dentro de una transacción.
     const transaction = updates.map((updateData) => {
       const { id, ...dataToUpdate } = updateData;
+
+      if (dataToUpdate.password) {
+        dataToUpdate.password = encrypt(dataToUpdate.password);
+      }
+
+      if (dataToUpdate.username) {
+        dataToUpdate.username = encrypt(dataToUpdate.username);
+      }
       
       return prisma.serverConfig.update({
         where: { id: Number(id) },
