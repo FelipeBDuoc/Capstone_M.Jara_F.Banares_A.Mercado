@@ -1,12 +1,30 @@
 ---
-
 import Layout from "../layouts/Layout.astro"
 import Header from "../components/Header.astro"
 import AdminPanel from "../components/AdminPanel/AdminPanel.astro"
+import { prisma } from '../lib/prisma';
+
+const sessionCookie = Astro.cookies.get("session")?.json();
+const rolesPermitidos = ['admin', 'mod'];
+
+if (!sessionCookie) {
+  return Astro.redirect("/");
+}
+
+const userRealTime = await prisma.user.findUnique({
+  where: { discordId: sessionCookie.id },
+  select: { role: true }
+});
+
+if (!userRealTime || !rolesPermitidos.includes(userRealTime.role)) {
+  
+  return Astro.redirect("/?error=rol_no_autorizado");
+
+}
 
 ---
 
-<Layout>
+<Layout title="Panel de Administración">
     <Header />
     <AdminPanel />
 </Layout>

@@ -20,6 +20,7 @@ interface UserSession {
   username: string;
   avatar: string | null;
   esAdmin: boolean;
+  esMod: boolean;
 }
 
 // --- EL ENDPOINT ---
@@ -73,8 +74,10 @@ export async function GET(context: APIContext) {
     const BOT_TOKEN = import.meta.env.DISCORD_BOT_TOKEN;
     const SERVER_ID = import.meta.env.MI_SERVIDOR_ID;
     const ADMIN_ROLE_ID = import.meta.env.ID_ROL_ADMIN;
+    const MOD_ROLE_ID = import.meta.env.ID_ROL_MOD;
 
-    let esAdmin = true;
+    let esAdmin = false;
+    let esMod = false;
 
     const memberResponse = await fetch(
       `https://discord.com/api/guilds/${SERVER_ID}/members/${userData.id}`,
@@ -86,9 +89,14 @@ export async function GET(context: APIContext) {
       if (memberData.roles.includes(ADMIN_ROLE_ID)) {
         esAdmin = true;
       }
+      else if (memberData.roles.includes(MOD_ROLE_ID)) {
+        esMod = true;
+      }
     }
 
-    const dbRole = esAdmin ? "admin" : "usuario";
+    const dbRole = esAdmin ? "admin"
+             : esMod ? "mod"
+             : "usuario";
 
     // --- 6. REGISTRAR O ACTUALIZAR EN BASE DE DATOS ---
     try {
@@ -123,13 +131,14 @@ export async function GET(context: APIContext) {
         ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` // Usamos el avatar solo en la cookie
         : null,
       esAdmin: esAdmin,
+      esMod: esMod
     };
 
     cookies.set("session", JSON.stringify(userToSave), {
       httpOnly: true,
       secure: import.meta.env.PROD,
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,  // La cookie expirará en 7 días
+      maxAge: 60 * 60 * 24 * 7 * 365,  // La cookie expirará en 7 días
     });
 
     return redirect("/", 302);

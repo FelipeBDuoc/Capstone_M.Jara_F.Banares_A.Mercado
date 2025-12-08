@@ -196,7 +196,7 @@ function renderTable() {
     const select = document.createElement('select');
     select.className = "bg-[#0a0a0a] border border-gray-700 text-gray-300 text-xs rounded px-2 py-1 focus:border-[#64ffd6] focus:text-[#64ffd6] outline-none cursor-pointer";
     
-    ['usuario', 'moderator', 'admin', 'soporte'].forEach(r => {
+    ['usuario', 'mod', 'admin'].forEach(r => {
         const op = document.createElement('option');
         op.value = r;
         op.textContent = r.toUpperCase();
