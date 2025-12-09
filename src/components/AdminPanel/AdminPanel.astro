@@ -34,34 +34,34 @@ import ForoAdmin from './ForoAdmin.astro';
 
       <button 
         class="show-tool-btn p-8 rounded-lg text-left transition-all duration-200 hover:bg-gray-900 hover:border-[#64ffd6] border border-white hover:shadow-xl shadow-[#00ffbb]/25" 
-        data-tool="tool-2"
+        data-tool="tool-3"
       >
         <h3 class="text-xl font-semibold text-light mb-2">Modificar Carrusel</h3>
         <p class="text-gray-400">Accede a la pagina para modificar el carrusel principal.</p>
       </button>
 
-      <button 
+            <button 
         class="show-tool-btn p-8 rounded-lg text-left transition-all duration-200 hover:bg-gray-900 hover:border-[#64ffd6] border border-white hover:shadow-xl shadow-[#00ffbb]/25" 
-        data-tool="tool-3"
+        data-tool="tool-4" 
       >
-        <h3 class="text-xl font-semibold text-light mb-2">Administración de Usuarios</h3>
-        <p class="text-gray-400">Página de administración y modificación de roles de usuarios.</p>
+        <h3 class="text-xl font-semibold text-light mb-2">Modificar Publicaciones</h3>
+        <p class="text-gray-400">Accede a la pagina para modificar las publicaciones.</p>
       </button>
 
       <button 
         class="show-tool-btn p-8 rounded-lg text-left transition-all duration-200 hover:bg-gray-900 hover:border-[#64ffd6] border border-white hover:shadow-xl shadow-[#00ffbb]/25" 
-        data-tool="tool-4"
+        data-tool="tool-5"
       >
         <h3 class="text-xl font-semibold text-light mb-2">Foro</h3>
         <p class="text-gray-400">Próxima herramienta para la administración del foro.</p>
       </button>
 
-      <button 
+            <button 
         class="show-tool-btn p-8 rounded-lg text-left transition-all duration-200 hover:bg-gray-900 hover:border-[#64ffd6] border border-white hover:shadow-xl shadow-[#00ffbb]/25" 
-        data-tool="tool-5" 
+        data-tool="tool-6"
       >
-        <h3 class="text-xl font-semibold text-light mb-2">Modificar Publicaciones</h3>
-        <p class="text-gray-400">Accede a la pagina para modificar las publicaciones.</p>
+        <h3 class="text-xl font-semibold text-light mb-2">Administración de Usuarios</h3>
+        <p class="text-gray-400">Página de administración y modificación de roles de usuarios.</p>
       </button>
 
     </div>
@@ -94,19 +94,19 @@ import ForoAdmin from './ForoAdmin.astro';
       <div id="tool-3" class="tool-wrapper h-full" style="display: none;">
         <CarruselAdmin/>
       </div>
-
+      
       <div id="tool-4" class="tool-wrapper h-full" style="display: none;">
-        <UserAdmin/>
+        <NewsAdmin/>
       </div>
-
+      
       <div id="tool-5" class="tool-wrapper h-full" style="display: none;">
         <ForoAdmin>
       </div>
 
       <div id="tool-6" class="tool-wrapper h-full" style="display: none;">
-        <NewsAdmin/>
+        <UserAdmin/>
       </div>
-      
+
     </main>
   </div>
 </div>
