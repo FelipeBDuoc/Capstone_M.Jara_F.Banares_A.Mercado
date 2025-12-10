@@ -1,0 +1,17 @@
+DATABASE_URL="postgresql://novu_admin:novu_pass_123_.,@amercado.ddns.net:5432/novuvitae_db" # Cambiar por base de datos real
+DIRECT_URL="postgresql://novu_admin:novu_pass_123_.,@amercado.ddns.net:5432/novuvitae_db" # Cambiar por base de datos real
+
+PROXMOX_URL="https://amercado.ddns.net:8006" # Cambiar por direccion de proxmox real
+PROXMOX_NODE="beto" # Cambiar por el nombre de nodo en proxmox
+PROXMOX_TOKEN_ID="root@pam!monitor-astro" # Crear api token de proxmox y poner id aquí
+PROXMOX_TOKEN_SECRET="dee75102-7383-4c14-b453-c9a4b2414acf" # Poner secret token de api de proxmox aquí
+
+DISCORD_CLIENT_ID="1436062514054959246" # ID del bot de Auth para login
+DISCORD_CLIENT_SECRET="wq5srUdbZPtREADWeHNOE4apbEsBaiZE" # Secret id del bot
+DISCORD_BOT_TOKEN="SECRET KEY" # Token del bot para poner rol automático desde server
+
+MI_SERVIDOR_ID="1185454682852831262" # Id de servidor real de discord
+ID_ROL_ADMIN="1436381172245729412" # Id rol de admin de discord
+ID_ROL_MOD="1336879572007915562" # Id rol de mod de discord
+
+ENCRYPTION_KEY="mJU32UO2hLV3QIWhm32L8sShXHp4InPz" # Encriptado de contraseñas de vms, se puede cambiar por cualquier cadena de carácteres de 32 de largo
