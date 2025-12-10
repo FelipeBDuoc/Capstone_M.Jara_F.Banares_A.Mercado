@@ -74,7 +74,7 @@ wss.on('connection', (ws) => {
           return;
         }
 
-        ws.send(JSON.stringify({ type: 'status', message: `Conectando a ${vm.host}...` }));
+        ws.send(JSON.stringify({ type: 'status', message: `Conectando a ${vm.host}:${vm.port}` }));
 
         const decryptedPassword = decrypt(vm.password);
         const decryptedUsername = decrypt(vm.username);
